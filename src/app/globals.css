@@ -82,6 +82,28 @@ html {
   }
 }
 
+@keyframes glowBorder {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.5),
+      inset 0 0 10px rgba(0, 212, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.8),
+      inset 0 0 15px rgba(0, 212, 255, 0.2);
+  }
+}
+
+button:hover {
+  animation: glowBorder 2s ease-in-out infinite;
+}
+
+@layer utilities {
+  .animate-spin {
+    animation: spin 3s linear infinite;
+  }
+}
+
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);

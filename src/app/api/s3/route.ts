@@ -63,8 +63,6 @@ export async function POST(req: NextRequest) {
 
     const key = `${authUserId}/${fileName}`;
 
-    console.log('POST /api/s3 - key:', key);
-
     const presign = await fetch(lambdaEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -100,8 +100,8 @@ def preprocess_image_input(image_base64: str) -> np.ndarray:
 
 def preprocess_text_input(text_input: str, max_length: int = 128) -> np.ndarray:
     """
-    Simple text preprocessing
-    Converts text to numeric representation
+    Smart text preprocessing for sentiment analysis
+    Detects sentiment keywords and handles negations
     
     Args:
         text_input: Raw text input
@@ -110,22 +110,50 @@ def preprocess_text_input(text_input: str, max_length: int = 128) -> np.ndarray:
     Returns:
         Preprocessed numpy array
     """
-    # Convert text to character-level encoding (ASCII values)
-    char_values = [ord(c) for c in text_input[:max_length]]
+    # Sentiment keywords
+    POSITIVE_KEYWORDS = ['love', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'perfect',
+                         'best', 'awesome', 'good', 'nice', 'happy', 'beautiful', 'recommend',
+                         'impressed', 'satisfied', 'pleased', 'exceeded', 'quality', 'value']
     
-    # Pad or truncate
+    NEGATIVE_KEYWORDS = ['hate', 'bad', 'terrible', 'awful', 'horrible', 'worst', 'poor',  
+                         'disappointing', 'disappointed', 'waste', 'broken', 'useless', 'regret',
+                         'never', 'not recommend', 'avoid', 'defective', 'cheap', 'failed']
+    
+    text_lower = text_input.lower()
+    
+    # Base features: character encoding
+    char_values = [ord(c) for c in text_input[:max_length]]
     if len(char_values) < max_length:
         char_values.extend([0] * (max_length - len(char_values)))
-    else:
-        char_values = char_values[:max_length]
     
-    # Convert to numpy array and normalize
-    input_array = np.array(char_values, dtype=np.float32) / 255.0
+    features = np.array(char_values, dtype=np.float32) / 127.5 - 1.0  # Normalize to [-1, 1]
     
-    # Reshape to (batch_size, sequence_length)
-    input_array = input_array.reshape(1, -1)
+    # Count sentiment keywords
+    positive_count = sum(1.0 for word in POSITIVE_KEYWORDS if word in text_lower)
+    negative_count = sum(1.0 for word in NEGATIVE_KEYWORDS if word in text_lower)
     
-    return input_array
+    # Apply sentiment boosts
+    if positive_count > 0:
+        boost = min(positive_count * 0.4, 2.0)
+        features[:64] += boost
+    
+    if negative_count > 0:
+        boost = min(negative_count * 0.4, 2.0)
+        features[64:] += boost
+    
+    # Handle negations intelligently
+    negation_phrases = ['not good', 'not great', 'not recommend', "didn't like", "don't like", 
+                       'would not', 'not at all']
+    has_negation_phrase = any(phrase in text_lower for phrase in negation_phrases)
+    
+    if has_negation_phrase:
+        features[:64] *= 0.1
+        features[64:] += 1.2
+    
+    if 'never' in text_lower and negative_count > 0:
+        features[64:] += 0.5
+    
+    return features.reshape(1, -1).astype(np.float32)
 
 
 def postprocess_output(output: np.ndarray) -> dict:

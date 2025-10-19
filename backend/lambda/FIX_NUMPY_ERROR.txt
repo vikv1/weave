@@ -1,0 +1,101 @@
+========================================
+FIX: "No module named 'numpy'" Error
+========================================
+
+This error means the Lambda Layer is NOT attached to your function yet.
+
+========================================
+QUICK FIX:
+========================================
+
+Option A: Use Public Layer (FASTEST - 2 minutes)
+-------------------------------------------------
+
+1. Go to your Lambda function:
+   https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions/weave-inference
+
+2. Scroll down to "Layers" section
+
+3. Click "Add a layer"
+
+4. Choose "Specify an ARN"
+
+5. Enter this ARN:
+   arn:aws:lambda:us-east-1:178958628385:layer:onnxruntime:1
+
+6. Click "Add"
+
+7. Click "Deploy" (top right)
+
+8. Test again!
+
+
+Option B: Upload YOUR Layer (5 minutes)
+----------------------------------------
+
+Step 1: Upload to S3
+1. Go to: https://s3.console.aws.amazon.com/s3/buckets/weave-model-storage
+2. Create "layers" folder
+3. Upload: onnx-layer.zip (the 52MB file we just created)
+
+Step 2: Create Layer
+1. Go to: https://console.aws.amazon.com/lambda/home?region=us-east-1#/layers
+2. Click "Create layer"
+3. Name: onnxruntime-numpy
+4. Description: ONNX Runtime + NumPy
+5. "Upload a file from Amazon S3"
+6. S3 URI: s3://weave-model-storage/layers/onnx-layer.zip
+7. Compatible runtimes: Python 3.11
+8. Click "Create"
+9. Copy the Layer ARN
+
+Step 3: Add to Function
+1. Go back to: weave-inference function
+2. Scroll to "Layers"
+3. Click "Add a layer"
+4. Choose "Custom layers"
+5. Select: onnxruntime-numpy
+6. Version: 1
+7. Click "Add"
+
+========================================
+VERIFY IT'S ATTACHED:
+========================================
+
+In Lambda Console, look for "Layers" section.
+You should see something like:
+
+Layers (1)
+  onnxruntime-numpy:1
+  or
+  onnxruntime:1
+
+If you don't see any layers listed, it's NOT attached!
+
+========================================
+AFTER ADDING LAYER:
+========================================
+
+1. Click "Deploy" button (top right)
+2. Wait 5 seconds
+3. Test:
+   powershell -File quick_test.ps1
+
+========================================
+STILL NOT WORKING?
+========================================
+
+Check these:
+
+1. Layer is shown in Lambda console? 
+   ✓ Yes → Good
+   ✗ No → Add the layer!
+
+2. Handler is uploaded?
+   ✓ lambda-handler-only.zip uploaded
+
+3. Model in S3?
+   ✓ s3://weave-model-storage/user123/sentiment-model.onnx
+
+========================================
+

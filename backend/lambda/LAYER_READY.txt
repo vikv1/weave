@@ -1,0 +1,121 @@
+========================================
+✅ LAMBDA LAYER READY!
+========================================
+
+File: onnx-layer.zip (52.24 MB)
+Location: C:\Users\lakes\weave\backend\lambda\onnx-layer.zip
+
+This layer contains:
+- onnxruntime 1.16.3 (Linux)
+- numpy 1.26.4 (Linux)  
+- All dependencies
+
+========================================
+STEP 1: Upload to S3
+========================================
+
+Go to: https://s3.console.aws.amazon.com/s3/buckets/weave-model-storage
+
+1. Create "layers" folder (if it doesn't exist)
+2. Click "Upload"
+3. Select: onnx-layer.zip
+4. Click "Upload"
+5. Wait for upload to complete (~1 minute)
+
+========================================
+STEP 2: Create Lambda Layer
+========================================
+
+Go to: https://console.aws.amazon.com/lambda/home?region=us-east-1#/layers
+
+1. Click "Create layer"
+2. Name: onnxruntime-numpy
+3. Description: ONNX Runtime + NumPy for Lambda
+4. Upload method: "Upload a file from Amazon S3"
+5. S3 URI: s3://weave-model-storage/layers/onnx-layer.zip
+6. Compatible runtimes: Python 3.11
+7. Click "Create"
+8. COPY THE LAYER ARN (you'll need this!)
+
+Example ARN:
+arn:aws:lambda:us-east-1:YOUR_ACCOUNT:layer:onnxruntime-numpy:1
+
+========================================
+STEP 3: Add Layer to Lambda Function
+========================================
+
+Go to: https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions/weave-inference
+
+1. Scroll to "Layers" section
+2. Click "Add a layer"
+3. Choose "Custom layers"
+4. Select: onnxruntime-numpy
+5. Version: 1
+6. Click "Add"
+
+========================================
+STEP 4: Upload Handler
+========================================
+
+While you're in the Lambda console:
+
+1. Click "Upload from" -> ".zip file"
+2. Select: lambda-handler-only.zip
+3. Click "Save"
+
+========================================
+STEP 5: Upload Model to S3
+========================================
+
+Go to: https://s3.console.aws.amazon.com/s3/buckets/weave-model-storage
+
+1. Create "user123" folder
+2. Upload: sentiment-model.onnx
+3. Final path: s3://weave-model-storage/user123/sentiment-model.onnx
+
+========================================
+STEP 6: TEST!
+========================================
+
+Run:
+cd C:\Users\lakes\weave\backend\lambda
+powershell -File quick_test.ps1
+
+Expected result:
+{
+  "prediction": {
+    "sentiment": "positive",
+    "confidence": 1.0
+  }
+}
+
+========================================
+FILES CHECKLIST:
+========================================
+
+✅ onnx-layer.zip (52.24 MB) - Lambda layer
+✅ lambda-handler-only.zip (3.85 KB) - Lambda code
+✅ sentiment-model.onnx (16.71 KB) - ML model
+✅ quick_test.ps1 - Test script
+
+========================================
+TROUBLESHOOTING:
+========================================
+
+If test fails:
+1. Check layer is added to Lambda function
+2. Check model is uploaded to S3
+3. Check Lambda has S3 read permissions
+4. View CloudWatch Logs for errors
+
+========================================
+YOU'RE ALMOST DONE!
+========================================
+
+Just upload these 3 files:
+1. onnx-layer.zip → S3 layers/ (then create layer)
+2. lambda-handler-only.zip → Lambda function
+3. sentiment-model.onnx → S3 user123/
+
+Then test and you're ready for the hackathon! 🚀
+

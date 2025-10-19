@@ -1,0 +1,39 @@
+
+========================================
+CREATE CUSTOM LAMBDA LAYER
+========================================
+
+If public ONNX Runtime layers don't work, create your own:
+
+METHOD 1: Use Cloud9 (Recommended)
+-----------------------------------
+1. Launch AWS Cloud9 (Amazon Linux 2)
+2. Run these commands:
+
+mkdir python
+pip install onnxruntime numpy -t python/
+zip -r onnx-layer.zip python/
+
+3. Upload to S3:
+aws s3 cp onnx-layer.zip s3://weave-model-storage/layers/
+
+4. Create Lambda Layer:
+aws lambda publish-layer-version \
+  --layer-name onnxruntime-numpy \
+  --content S3Bucket=weave-model-storage,S3Key=layers/onnx-layer.zip \
+  --compatible-runtimes python3.11
+
+5. Add layer to your Lambda function
+
+METHOD 2: Use Docker (if you have it)
+-------------------------------------
+docker run --rm -v "$PWD":/var/task public.ecr.aws/lambda/python:3.11 \
+  bash -c "pip install onnxruntime numpy -t python/ && zip -r onnx-layer.zip python/"
+
+METHOD 3: Download pre-built layer
+----------------------------------
+Some communities provide pre-built layers:
+- Search: "onnxruntime lambda layer"
+- Use ARN: arn:aws:lambda:us-east-1:178958628385:layer:onnxruntime:1
+
+========================================

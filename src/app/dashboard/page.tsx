@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import {createClient} from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 // Generate realistic mock data for charts with positive trending
 const generateChartData = (points: number, base: number, variance: number) => {
@@ -40,6 +42,7 @@ interface UploadedModel {
 }
 
 export default function Dashboard() {
+  const supabase = createClient();
   const [activeTab, setActiveTab] = useState<'upload' | 'home'>('home');
   const [isDragging, setIsDragging] = useState(false);
   const [models, setModels] = useState<UploadedModel[]>([]);
@@ -50,10 +53,26 @@ export default function Dashboard() {
   const [inferenceInput, setInferenceInput] = useState('');
   const [inferenceOutput, setInferenceOutput] = useState('');
 
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
+    
   }, []);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchUser() {
+      const { data, error } = await supabase.auth.getUser();
+      if (!cancelled) {
+        setUser(data?.user ?? null);
+        // console.log(data?.user?.id);
+      }
+    }
+    fetchUser();
+    return () => { cancelled = true; };
+  }, [supabase]);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -310,9 +329,9 @@ export default function Dashboard() {
                   />
                 </svg>
               </button>
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center cursor-pointer">
-                <span className="text-white font-semibold text-sm">JD</span>
-              </div>
+              <div className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center cursor-pointer">
+                <span className="text-white font-semibold text-sm">{user?.user_metadata.full_name.split(" ")[0][0] + user?.user_metadata.full_name.split(" ")[1][0] || 'TU'}</span>
+              </div>  
             </div>
           </div>
         </div>

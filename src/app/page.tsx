@@ -24,13 +24,6 @@ export default function Home() {
             : "bg-transparent"
         }`}
       >
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled
-            ? "bg-[#0f0f0f]/80 backdrop-blur-xl border-b border-gray-800/50"
-            : "bg-transparent"
-        }`}
-      >
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center space-x-3">
@@ -40,13 +33,13 @@ export default function Home() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
                 <svg
                   className="w-5 h-5 text-black"
                   fill="none"
@@ -64,28 +57,22 @@ export default function Home() {
               <span className="text-xl font-medium text-white">Weave</span>
             </div>
 
-<<<<<<< HEAD
             <div className="flex items-center space-x-8">
               <Link
                 href="/dashboard"
-                className="text-gray-400 hover:text-white transition-colors text-sm transition-ease-in-out duration-150"
+                className="text-gray-400 hover:text-white transition-ease-in-out duration-150 hover:cursor-pointer"
               >
-                Dashboard
+                <button className="text-gray-400 hover:text-white transition-ease-in-out duration-150 hover:cursor-pointer">
+                  Dashboard
+                </button>
               </Link>
+
               <Link href="/dashboard">
-                <button className="bg-white text-black px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-150">
+                <button className="bg-white text-black px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-150 hover:cursor-pointer">
                   Get Started
                 </button>
               </Link>
             </div>
-=======
-            <Link
-              className="bg-white text-black px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-200"
-              href="/dashboard"
-            >
-              Dashboard
-            </Link>
->>>>>>> origin/main
           </div>
         </div>
       </nav>
@@ -107,18 +94,10 @@ export default function Home() {
               no DevOps required.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-300">
-<<<<<<< HEAD
               <Link href="/dashboard">
                 <button className="animate-pulse bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.8)] hover:cursor-pointer">
                   Deploy Your Model
                 </button>
-=======
-              <Link
-                href="/dashboard"
-                className="bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300"
-              >
-                Deploy Your Model
->>>>>>> origin/main
               </Link>
             </div>
           </div>
@@ -132,13 +111,8 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl font-light text-white mb-6">
               Are you still deploying ML models{" "}
               <em className="italic">like it's 2015?</em>
-              Are you still deploying ML models{" "}
-              <em className="italic">like it's 2015?</em>
             </h2>
             <p className="text-base md:text-lg text-gray-400 max-w-3xl mx-auto leading-relaxed font-light">
-              Hours wasted on complex infrastructure — but enterprise ML
-              deployment breaks down due to YAML configs, Docker complexity, and
-              manual scaling headaches.
               Hours wasted on complex infrastructure — but enterprise ML
               deployment breaks down due to YAML configs, Docker complexity, and
               manual scaling headaches.
@@ -154,7 +128,7 @@ export default function Home() {
               <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-4 text-white font-light text-lg">
                 01
               </div>
-              <h3 className="text-xl font-light text-white mb-3">
+              <h3 className="text-xl font-medium text-white mb-3">
                 Upload Your Model
               </h3>
               <p className="text-gray-400 leading-relaxed text-sm font-light">
@@ -167,7 +141,7 @@ export default function Home() {
               <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-4 text-white font-light text-lg">
                 02
               </div>
-              <h3 className="text-xl font-light text-white mb-3">
+              <h3 className="text-xl font-medium text-white mb-3">
                 Configure (Optional)
               </h3>
               <p className="text-gray-400 leading-relaxed text-sm font-light">
@@ -180,7 +154,7 @@ export default function Home() {
               <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-4 text-white font-light text-lg">
                 03
               </div>
-              <h3 className="text-xl font-light text-white mb-3">
+              <h3 className="text-xl font-medium text-white mb-3">
                 Deploy & Scale
               </h3>
               <p className="text-gray-400 leading-relaxed text-sm font-light">
@@ -193,7 +167,7 @@ export default function Home() {
       </section>
 
       {/* Features */}
-      <section className="py-20 px-6 lg:px-8 border-t border-gray-800/50">
+      <section className="py-20 px-6 lg:px-8 border-t border-gray-800/50 select-none">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 animate-fade-in-up animation-delay-1000">
             <h2 className="text-3xl md:text-4xl font-light text-white mb-6">
@@ -206,7 +180,7 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in-up animation-delay-1100">
-            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1200 hover:bg-gray-900/30 transition-all duration-300">
+            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1200 hover:bg-gray-900/30 transition-all duration-300 hover:scale-105">
               <div className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-white"
@@ -231,7 +205,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1300 hover:bg-gray-900/30 transition-all duration-300">
+            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1300 hover:bg-gray-900/30 transition-all duration-300 hover:scale-105">
               <div className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-white"
@@ -254,7 +228,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1400 hover:bg-gray-900/30 transition-all duration-300">
+            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1400 hover:bg-gray-900/30 transition-all duration-300 hover:scale-105">
               <div className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-white"
@@ -278,62 +252,9 @@ export default function Home() {
                 intuitive dashboards.
               </p>
             </div>
-<<<<<<< HEAD
-
-  
-
-            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1600 hover:bg-gray-900/30 transition-all duration-300">
-              <div className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-light text-white">Any Framework</h3>
-              <p className="text-gray-400 text-sm leading-relaxed font-light">
-                PyTorch, TensorFlow, scikit-learn, ONNX, or custom—we support
-                them all.
-              </p>
-            </div>
-
-            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1700 hover:bg-gray-900/30 transition-all duration-300">
-              <div className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-light text-white">
-                Transparent Pricing
-              </h3>
-              <p className="text-gray-400 text-sm leading-relaxed font-light">
-                Pay only for what you use. No hidden fees, no surprise bills.
-                Start free.
-              </p>
-            </div>
           </div>
         </div>
       </section>
-
-      
 
       {/* CTA Section */}
       <section className="py-20 px-6 lg:px-8 border-t border-gray-800/50">
@@ -345,11 +266,10 @@ export default function Home() {
             Join thousands of ML engineers who've simplified their deployment
             workflow.
           </p>
-          <Link
-            href="/dashboard"
-            className="bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300"
-          >
-            Deploy Your Model
+          <Link href="/dashboard">
+            <button className="animate-pulse bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.8)] hover:cursor-pointer">
+              Deploy Your Model
+            </button>
           </Link>
         </div>
       </section>
@@ -376,11 +296,6 @@ export default function Home() {
               </div>
               <span className="text-lg font-light text-white">Weave</span>
             </div>
-<<<<<<< HEAD
-
-           
-=======
->>>>>>> origin/main
           </div>
           <div className="border-t border-gray-800/50 mt-8 pt-6 text-center">
             <p className="text-gray-500 text-sm font-light">

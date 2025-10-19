@@ -94,16 +94,6 @@ html {
   }
 }
 
-button:hover {
-  animation: glowBorder 2s ease-in-out infinite;
-}
-
-@layer utilities {
-  .animate-spin {
-    animation: spin 3s linear infinite;
-  }
-}
-
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);

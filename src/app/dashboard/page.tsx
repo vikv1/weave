@@ -253,16 +253,17 @@ export default function Dashboard() {
           deploymentType: type,
         }),
       });
-
+  
       if (!res.ok) {
         const error = await res.json();
         console.error('Upload failed:', error);
         setUploadStatus("Upload failed!");
         await new Promise(resolve => setTimeout(resolve, 2000));
         setIsUploading(false);
+        alert(`Upload failed: ${error.error || 'Unknown error'}`);
         return;
       }
-
+  
       const result = await res.json();
 
       // Step 3: Deploying (60-90%)
@@ -286,6 +287,33 @@ export default function Dashboard() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       setIsUploading(false);
       setPendingFile(null);
+      console.log('Upload successful:', result);
+      
+      // Show success message
+      alert('File uploaded successfully!');
+      
+      // Refresh the S3 items list
+      if (user) {
+        setS3Loading(true);
+        try {
+          const listRes = await fetch('/api/s3');
+          if (listRes.ok) {
+            const data = await listRes.json();
+            setS3Items(Array.isArray(data?.items) ? data.items : []);
+          }
+        } catch (e) {
+          console.error('Failed to refresh list:', e);
+        } finally {
+          setS3Loading(false);
+        }
+      }
+      
+      // Clear selected file
+      setSelectedFile(null);
+      
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Upload failed. Please try again.');
     }
   };
 

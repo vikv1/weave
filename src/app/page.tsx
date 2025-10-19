@@ -34,7 +34,7 @@ export default function Home() {
             <h1 className="text-5xl md:text-7xl font-light text-white mb-6 leading-tight animate-fade-in-up">
               Deploy ML Models
               <br />
-              <span className="italic font-normal text-gray-400 animate-fade-in-up animation-delay-100">
+              <span className="italic font-normal bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent animate-fade-in-up animation-delay-100 inline-block px-1 pb-1">
                 in seconds
               </span>
             </h1>

@@ -39,7 +39,7 @@ export function SignUpForm({
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${baseUrl}/auth/callback?next=/dashboard`,
+          redirectTo: `${baseUrl}/auth/callback`,
         },
       });
       if (error) throw error;

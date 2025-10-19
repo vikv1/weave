@@ -287,33 +287,6 @@ export default function Dashboard() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       setIsUploading(false);
       setPendingFile(null);
-      console.log('Upload successful:', result);
-      
-      // Show success message
-      alert('File uploaded successfully!');
-      
-      // Refresh the S3 items list
-      if (user) {
-        setS3Loading(true);
-        try {
-          const listRes = await fetch('/api/s3');
-          if (listRes.ok) {
-            const data = await listRes.json();
-            setS3Items(Array.isArray(data?.items) ? data.items : []);
-          }
-        } catch (e) {
-          console.error('Failed to refresh list:', e);
-        } finally {
-          setS3Loading(false);
-        }
-      }
-      
-      // Clear selected file
-      setSelectedFile(null);
-      
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Upload failed. Please try again.');
     }
   };
 

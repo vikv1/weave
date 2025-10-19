@@ -33,6 +33,18 @@ export default function Home() {
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+                <svg
+                  className="w-5 h-5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
                   <path
                     strokeLinecap="round"
@@ -45,12 +57,22 @@ export default function Home() {
               <span className="text-xl font-medium text-white">Weave</span>
             </div>
 
-            <Link
-              className="bg-white text-black px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-200"
-              href="/dashboard"
-            >
-              Dashboard
-            </Link>
+            <div className="flex items-center space-x-8">
+              <Link
+                href="/dashboard"
+                className="text-gray-400 hover:text-white transition-ease-in-out duration-150 hover:cursor-pointer"
+              >
+                <button className="text-gray-400 hover:text-white transition-ease-in-out duration-150 hover:cursor-pointer">
+                  Dashboard
+                </button>
+              </Link>
+
+              <Link href="/dashboard">
+                <button className="bg-white text-black px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-150 hover:cursor-pointer">
+                  Get Started
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
@@ -72,11 +94,10 @@ export default function Home() {
               no DevOps required.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-300">
-              <Link
-                href="/dashboard"
-                className="bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300"
-              >
-                Deploy Your Model
+              <Link href="/dashboard">
+                <button className="animate-pulse bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.8)] hover:cursor-pointer">
+                  Deploy Your Model
+                </button>
               </Link>
             </div>
           </div>
@@ -107,7 +128,7 @@ export default function Home() {
               <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-4 text-white font-light text-lg">
                 01
               </div>
-              <h3 className="text-xl font-light text-white mb-3">
+              <h3 className="text-xl font-medium text-white mb-3">
                 Upload Your Model
               </h3>
               <p className="text-gray-400 leading-relaxed text-sm font-light">
@@ -120,7 +141,7 @@ export default function Home() {
               <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-4 text-white font-light text-lg">
                 02
               </div>
-              <h3 className="text-xl font-light text-white mb-3">
+              <h3 className="text-xl font-medium text-white mb-3">
                 Configure (Optional)
               </h3>
               <p className="text-gray-400 leading-relaxed text-sm font-light">
@@ -133,7 +154,7 @@ export default function Home() {
               <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mx-auto mb-4 text-white font-light text-lg">
                 03
               </div>
-              <h3 className="text-xl font-light text-white mb-3">
+              <h3 className="text-xl font-medium text-white mb-3">
                 Deploy & Scale
               </h3>
               <p className="text-gray-400 leading-relaxed text-sm font-light">
@@ -146,7 +167,7 @@ export default function Home() {
       </section>
 
       {/* Features */}
-      <section className="py-20 px-6 lg:px-8 border-t border-gray-800/50">
+      <section className="py-20 px-6 lg:px-8 border-t border-gray-800/50 select-none">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 animate-fade-in-up animation-delay-1000">
             <h2 className="text-3xl md:text-4xl font-light text-white mb-6">
@@ -159,7 +180,7 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in-up animation-delay-1100">
-            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1200 hover:bg-gray-900/30 transition-all duration-300">
+            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1200 hover:bg-gray-900/30 transition-all duration-300 hover:scale-105">
               <div className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-white"
@@ -184,7 +205,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1300 hover:bg-gray-900/30 transition-all duration-300">
+            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1300 hover:bg-gray-900/30 transition-all duration-300 hover:scale-105">
               <div className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-white"
@@ -207,7 +228,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1400 hover:bg-gray-900/30 transition-all duration-300">
+            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1400 hover:bg-gray-900/30 transition-all duration-300 hover:scale-105">
               <div className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-white"
@@ -245,11 +266,10 @@ export default function Home() {
             Join thousands of ML engineers who've simplified their deployment
             workflow.
           </p>
-          <Link
-            href="/dashboard"
-            className="bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300"
-          >
-            Deploy Your Model
+          <Link href="/dashboard">
+            <button className="animate-pulse bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.8)] hover:cursor-pointer">
+              Deploy Your Model
+            </button>
           </Link>
         </div>
       </section>

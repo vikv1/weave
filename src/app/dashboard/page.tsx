@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   AreaChart,
@@ -68,6 +68,27 @@ export default function Dashboard() {
   const [isDragging, setIsDragging] = useState(false);
   const [models, setModels] = useState<UploadedModel[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [requestData, setRequestData] = useState<{ time: string; value: number }[]>([]);
+  const [costData, setCostData] = useState<{ time: string; value: number }[]>([]);
+
+  useEffect(() => {
+    setRequestData(generateChartData(14, 150, 60));
+    setCostData(generateChartData(14, 45, 20));
+  }, []);
+
+  const requestChange = useMemo(() => {
+    if (requestData.length < 2) return '0.0';
+    const first = requestData[0].value;
+    const last = requestData[requestData.length - 1].value;
+    return (((last - first) / first) * 100).toFixed(1);
+  }, [requestData]);
+
+  const costChange = useMemo(() => {
+    if (costData.length < 2) return '0.0';
+    const first = costData[0].value;
+    const last = costData[costData.length - 1].value;
+    return (((last - first) / first) * 100).toFixed(1);
+  }, [costData]);
   const [selectedModel, setSelectedModel] = useState<UploadedModel | null>(
     null
   );
@@ -153,42 +174,42 @@ export default function Dashboard() {
     }
   };
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
     setSelectedFile(file);
+  
+    console.log("file uploading...");
+    
+    try {
 
-    const newModel: UploadedModel = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
-      type: file.name.split(".").pop() || "unknown",
-      status: "uploading",
-      uploadTime: new Date().toLocaleString(),
-    };
-
-    setModels((prev) => [newModel, ...prev]);
-
-    // Simulate upload process
-    setTimeout(() => {
-      setModels((prev) =>
-        prev.map((m) =>
-          m.id === newModel.id ? { ...m, status: "processing" } : m
-        )
-      );
-    }, 1500);
-
-    setTimeout(() => {
-      setModels((prev) =>
-        prev.map((m) =>
-          m.id === newModel.id
-            ? {
-                ...m,
-                status: "deployed",
-                endpoint: `https://api.weave.ai/v1/models/${newModel.id}`,
-              }
-            : m
-        )
-      );
-    }, 4000);
+      const fileContent = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+  
+      const res = await fetch('/api/s3', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: '1',
+          fileName: file.name,
+          fileContent: fileContent,  
+          fileType: file.type,
+        }),
+      });
+  
+      if (!res.ok) {
+        const error = await res.json();
+        console.error('Upload failed:', error);
+        return;
+      }
+  
+      const result = await res.json();
+      console.log('Upload successful:', result);
+    } catch (error) {
+      console.error('Upload error:', error);
+    }
   };
 
   const handleModelClick = (model: UploadedModel) => {

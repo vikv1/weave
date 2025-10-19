@@ -35,34 +35,49 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const Bucket = process.env.S3_BUCKET_NAME;
-  const lambdaEndpoint = process.env.LAMBDA_PRESIGN_ENDPOINT || 'haha';
+  const lambdaEndpoint = process.env.LAMBDA_PRESIGN_ENDPOINT || 'hi dubhacks';
 
   try {
-    const { userId, fileName, contentType } = (await req.json()) as {
-      userId?: string; fileName?: string; contentType?: string;
-    };
-    if (!userId || !fileName) return NextResponse.json({ error: 'Missing userId or fileName' }, { status: 400 });
+    const { userId, fileName, fileContent, fileType } = await req.json();
+    
+    if (!userId || !fileName || !fileContent) {
+      return NextResponse.json({ error: 'Missing userId, fileName, or fileContent' }, { status: 400 });
+    }
 
     const key = `${userId}/${fileName}`;
 
-    const r = await fetch(lambdaEndpoint, {
+    const presign = await fetch(lambdaEndpoint, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        bucket: Bucket,
-        key,
-        method: 'PUT',
-        contentType: contentType || 'application/octet-stream',
-        expiresIn: 600,
+        filename: fileName,
+        uid: userId,
       }),
     });
+    
+    if (!presign.ok) {
+      return NextResponse.json({ error: 'Presign failed' }, { status: 502 });
+    }
+    
+    const { url: uploadUrl } = await presign.json();
 
-    if (!r.ok) return NextResponse.json({ error: 'Presign failed' }, { status: 502 });
-    const data = await r.json();
+    const base64Data = fileContent.replace(/^data:.+;base64,/, '');
+    const fileBuffer = Buffer.from(base64Data, 'base64');
+// Upload to S3
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: fileBuffer,
+    });
 
-    return NextResponse.json({ key, uploadUrl: data.url || data.uploadUrl });
-  } catch {
-    return NextResponse.json({ error: 'Bad request' }, { status: 400 });
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('S3 upload failed:', errorText);
+      return NextResponse.json({ error: 'Upload failed' }, { status: 502 });
+    }
+
+    return NextResponse.json({ success: true, key });
+  } catch (error) {
+    console.error('Upload error:', error);
+    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }

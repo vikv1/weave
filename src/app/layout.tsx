@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Weave - Effortless ML Deployment",
+  title: "Weave | Effortless ML Deployment",
   description: "Deploy machine learning models with drag-and-drop simplicity. The easiest ML deployment experience in the market.",
 };
 

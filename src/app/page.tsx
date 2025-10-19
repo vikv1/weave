@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -10,13 +10,20 @@ export default function Home() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       {/* Navigation */}
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? "bg-[#0f0f0f]/80 backdrop-blur-xl border-b border-gray-800/50"
+            : "bg-transparent"
+        }`}
+      >
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled
@@ -40,11 +47,24 @@ export default function Home() {
                     strokeWidth={2}
                     d="M13 10V3L4 14h7v7l9-11h-7z"
                   />
+                <svg
+                  className="w-5 h-5 text-black"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
                 </svg>
               </div>
               <span className="text-xl font-medium text-white">Weave</span>
             </div>
 
+<<<<<<< HEAD
             <div className="flex items-center space-x-8">
               <Link
                 href="/dashboard"
@@ -52,18 +72,20 @@ export default function Home() {
               >
                 Dashboard
               </Link>
-              <a
-                href="#pricing"
-                className="text-gray-400 hover:text-white transition-colors text-sm transition-ease-in-out duration-150"
-              >
-                Pricing
-              </a>
               <Link href="/dashboard">
                 <button className="bg-white text-black px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-150">
                   Get Started
                 </button>
               </Link>
             </div>
+=======
+            <Link
+              className="bg-white text-black px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-200"
+              href="/dashboard"
+            >
+              Dashboard
+            </Link>
+>>>>>>> origin/main
           </div>
         </div>
       </nav>
@@ -85,18 +107,20 @@ export default function Home() {
               no DevOps required.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-300">
+<<<<<<< HEAD
               <Link href="/dashboard">
                 <button className="animate-pulse bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.8)] hover:cursor-pointer">
-                  Start Deploying Free
+                  Deploy Your Model
                 </button>
+=======
+              <Link
+                href="/dashboard"
+                className="bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300"
+              >
+                Deploy Your Model
+>>>>>>> origin/main
               </Link>
-              <button className="border border-gray-600 text-white px-8 py-3 rounded-lg text-base font-light hover:bg-gray-800/50 transition-all duration-300">
-                Watch Demo
-              </button>
             </div>
-            <p className="text-gray-500 text-sm mt-6 font-light animate-fade-in-up animation-delay-400">
-              No credit card required • Free for up to 3 models
-            </p>
           </div>
         </div>
       </section>
@@ -108,8 +132,13 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl font-light text-white mb-6">
               Are you still deploying ML models{" "}
               <em className="italic">like it's 2015?</em>
+              Are you still deploying ML models{" "}
+              <em className="italic">like it's 2015?</em>
             </h2>
             <p className="text-base md:text-lg text-gray-400 max-w-3xl mx-auto leading-relaxed font-light">
+              Hours wasted on complex infrastructure — but enterprise ML
+              deployment breaks down due to YAML configs, Docker complexity, and
+              manual scaling headaches.
               Hours wasted on complex infrastructure — but enterprise ML
               deployment breaks down due to YAML configs, Docker complexity, and
               manual scaling headaches.
@@ -249,31 +278,9 @@ export default function Home() {
                 intuitive dashboards.
               </p>
             </div>
+<<<<<<< HEAD
 
-            <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1500 hover:bg-gray-900/30 transition-all duration-300">
-              <div className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-light text-white">
-                Enterprise Security
-              </h3>
-              <p className="text-gray-400 text-sm leading-relaxed font-light">
-                SOC 2 compliant with end-to-end encryption. Your models and data
-                stay secure.
-              </p>
-            </div>
+  
 
             <div className="space-y-3 p-6 bg-gray-900/20 rounded-xl border border-gray-800/30 animate-fade-in-up animation-delay-1600 hover:bg-gray-900/30 transition-all duration-300">
               <div className="w-10 h-10 bg-gray-800/50 rounded-lg flex items-center justify-center">
@@ -326,223 +333,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section
-        id="pricing"
-        className="py-20 px-6 lg:px-8 border-t border-gray-800/50 animate-fade-in-up animation-delay-1800"
-      >
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16 animate-fade-in-up animation-delay-1900">
-            <h2 className="text-3xl md:text-4xl font-light text-white mb-6">
-              Simple, Transparent Pricing
-            </h2>
-            <p className="text-base md:text-lg text-gray-400 font-light">
-              Pay only for what you use. Scale as you grow.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-gray-900/30 rounded-xl p-6 border border-gray-800/30">
-              <h3 className="text-lg font-light text-white mb-2">Free</h3>
-              <div className="mb-4">
-                <span className="text-4xl font-light text-white">$0</span>
-                <span className="text-gray-400 text-sm">/month</span>
-              </div>
-              <ul className="space-y-2 mb-6">
-                <li className="text-gray-400 text-sm flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2 text-green-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  3 models
-                </li>
-                <li className="text-gray-400 text-sm flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2 text-green-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  1K requests/month
-                </li>
-                <li className="text-gray-400 text-sm flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2 text-green-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Community support
-                </li>
-              </ul>
-              <Link href="/dashboard">
-                <button className="w-full bg-white text-black py-2.5 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
-                  Get Started
-                </button>
-              </Link>
-            </div>
-
-            <div className="bg-gray-900/30 rounded-xl p-6 border-2 border-indigo-500/30 relative">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-medium px-3 py-1 rounded-full">
-                MOST POPULAR
-              </div>
-              <h3 className="text-lg font-light text-white mb-2">Pro</h3>
-              <div className="mb-4">
-                <span className="text-4xl font-light text-white">$49</span>
-                <span className="text-gray-400 text-sm">/month</span>
-              </div>
-              <ul className="space-y-2 mb-6">
-                <li className="text-gray-300 text-sm flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2 text-green-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Unlimited models
-                </li>
-                <li className="text-gray-300 text-sm flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2 text-green-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  1M requests/month
-                </li>
-                <li className="text-gray-300 text-sm flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2 text-green-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Priority support
-                </li>
-                <li className="text-gray-300 text-sm flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2 text-green-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Advanced analytics
-                </li>
-              </ul>
-              <Link href="/dashboard">
-                <button className="w-full bg-white text-black py-2.5 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors">
-                  Start Pro Trial
-                </button>
-              </Link>
-            </div>
-
-            <div className="bg-gray-900/30 rounded-xl p-6 border border-gray-800/30">
-              <h3 className="text-lg font-light text-white mb-2">Enterprise</h3>
-              <div className="mb-4">
-                <span className="text-4xl font-light text-white">Custom</span>
-              </div>
-              <ul className="space-y-2 mb-6">
-                <li className="text-gray-400 text-sm flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2 text-green-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Everything in Pro
-                </li>
-                <li className="text-gray-400 text-sm flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2 text-green-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Custom limits
-                </li>
-                <li className="text-gray-400 text-sm flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2 text-green-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Dedicated support
-                </li>
-                <li className="text-gray-400 text-sm flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-2 text-green-500"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  SLA guarantee
-                </li>
-              </ul>
-              <button className="w-full bg-gray-800/50 text-white py-2.5 rounded-lg text-sm font-light hover:bg-gray-800/70 transition-colors">
-                Contact Sales
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       {/* CTA Section */}
       <section className="py-20 px-6 lg:px-8 border-t border-gray-800/50">
@@ -554,21 +345,19 @@ export default function Home() {
             Join thousands of ML engineers who've simplified their deployment
             workflow.
           </p>
-          <Link href="/dashboard">
-            <button className="bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300">
-              Start Free Trial
-            </button>
+          <Link
+            href="/dashboard"
+            className="bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300"
+          >
+            Deploy Your Model
           </Link>
-          <p className="text-gray-500 text-sm mt-4 font-light">
-            No credit card required • Free forever for up to 3 models
-          </p>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-gray-800/50 py-10 px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center">
+          <div className="flex justify-center">
             <div className="flex items-center space-x-3 mb-6 md:mb-0">
               <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center">
                 <svg
@@ -587,39 +376,11 @@ export default function Home() {
               </div>
               <span className="text-lg font-light text-white">Weave</span>
             </div>
+<<<<<<< HEAD
 
-            <div className="flex space-x-6 text-sm">
-              <a
-                href="#"
-                className="text-gray-500 hover:text-white transition-colors font-light"
-              >
-                Terms
-              </a>
-              <a
-                href="#"
-                className="text-gray-500 hover:text-white transition-colors font-light"
-              >
-                Privacy
-              </a>
-              <a
-                href="#"
-                className="text-gray-500 hover:text-white transition-colors font-light"
-              >
-                Docs
-              </a>
-              <a
-                href="#"
-                className="text-gray-500 hover:text-white transition-colors font-light"
-              >
-                Twitter
-              </a>
-              <a
-                href="#"
-                className="text-gray-500 hover:text-white transition-colors font-light"
-              >
-                GitHub
-              </a>
-            </div>
+           
+=======
+>>>>>>> origin/main
           </div>
           <div className="border-t border-gray-800/50 mt-8 pt-6 text-center">
             <p className="text-gray-500 text-sm font-light">

@@ -37,19 +37,19 @@ const costData = generateChartData(14, 45, 20);
 const requestChange =
   requestData.length > 1
     ? (
-        ((requestData[requestData.length - 1].value - requestData[0].value) /
-          requestData[0].value) *
-        100
-      ).toFixed(1)
+      ((requestData[requestData.length - 1].value - requestData[0].value) /
+        requestData[0].value) *
+      100
+    ).toFixed(1)
     : "0.0";
 
 const costChange =
   costData.length > 1
     ? (
-        ((costData[costData.length - 1].value - costData[0].value) /
-          costData[0].value) *
-        100
-      ).toFixed(1)
+      ((costData[costData.length - 1].value - costData[0].value) /
+        costData[0].value) *
+      100
+    ).toFixed(1)
     : "0.0";
 
 interface UploadedModel {
@@ -62,6 +62,14 @@ interface UploadedModel {
   endpoint?: string;
 }
 
+interface S3Item {
+  key: string;
+  fileName: string;
+  url: string | null;
+  size?: number | null;
+  lastModified?: string | null;
+}
+
 export default function Dashboard() {
   const supabase = createClient();
   const [activeTab, setActiveTab] = useState<"upload" | "home">("home");
@@ -70,6 +78,8 @@ export default function Dashboard() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [requestData, setRequestData] = useState<{ time: string; value: number }[]>([]);
   const [costData, setCostData] = useState<{ time: string; value: number }[]>([]);
+  const [s3Items, setS3Items] = useState<S3Item[]>([]);
+  const [s3Loading, setS3Loading] = useState(true);
 
   useEffect(() => {
     setRequestData(generateChartData(14, 150, 60));
@@ -152,6 +162,27 @@ export default function Dashboard() {
     };
   }, [supabase, router]);
 
+  // Minimal fetch of models from S3 API
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    async function load(currentUserId: string) {
+      try {
+        setS3Loading(true);
+        const res = await fetch('/api/s3');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setS3Items(Array.isArray(data?.items) ? data.items : []);
+      } catch (e) {
+        // swallow for minimal UI
+      } finally {
+        if (!cancelled) setS3Loading(false);
+      }
+    }
+    load(user.id);
+    return () => { cancelled = true; };
+  }, [user]);
+
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -176,9 +207,9 @@ export default function Dashboard() {
 
   const handleFileUpload = async (file: File) => {
     setSelectedFile(file);
-  
+
     console.log("file uploading...");
-    
+
     try {
 
       const fileContent = await new Promise<string>((resolve, reject) => {
@@ -187,24 +218,23 @@ export default function Dashboard() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-  
+
       const res = await fetch('/api/s3', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: '1',
           fileName: file.name,
-          fileContent: fileContent,  
+          fileContent: fileContent,
           fileType: file.type,
         }),
       });
-  
+
       if (!res.ok) {
         const error = await res.json();
         console.error('Upload failed:', error);
         return;
       }
-  
+
       const result = await res.json();
       console.log('Upload successful:', result);
     } catch (error) {
@@ -385,21 +415,19 @@ export default function Dashboard() {
               <div className="glass-card rounded-lg p-1 flex space-x-1">
                 <button
                   onClick={() => setActiveTab("home")}
-                  className={`px-4 py-2 rounded-md text-sm font-light transition-all duration-300 ${
-                    activeTab === "home"
-                      ? "bg-white text-black"
-                      : "text-gray-400 hover:text-white hover:bg-white/5"
-                  }`}
+                  className={`px-4 py-2 rounded-md text-sm font-light transition-all duration-300 ${activeTab === "home"
+                    ? "bg-white text-black"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                    }`}
                 >
                   Home
                 </button>
                 <button
                   onClick={() => setActiveTab("upload")}
-                  className={`px-4 py-2 rounded-md text-sm font-light transition-all duration-300 ${
-                    activeTab === "upload"
-                      ? "bg-white text-black"
-                      : "text-gray-400 hover:text-white hover:bg-white/5"
-                  }`}
+                  className={`px-4 py-2 rounded-md text-sm font-light transition-all duration-300 ${activeTab === "upload"
+                    ? "bg-white text-black"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                    }`}
                 >
                   Upload
                 </button>
@@ -448,11 +476,10 @@ export default function Dashboard() {
                         ).toLocaleString()}
                       </p>
                       <p
-                        className={`text-sm ${
-                          parseFloat(requestChange) >= 0
-                            ? "text-green-400"
-                            : "text-red-400"
-                        }`}
+                        className={`text-sm ${parseFloat(requestChange) >= 0
+                          ? "text-green-400"
+                          : "text-red-400"
+                          }`}
                       >
                         {parseFloat(requestChange) >= 0 ? "+" : ""}
                         {requestChange}% this week
@@ -539,11 +566,10 @@ export default function Dashboard() {
                         {(costData[costData.length - 1]?.value || 0).toFixed(2)}
                       </p>
                       <p
-                        className={`text-sm ${
-                          parseFloat(costChange) >= 0
-                            ? "text-yellow-400"
-                            : "text-red-400"
-                        }`}
+                        className={`text-sm ${parseFloat(costChange) >= 0
+                          ? "text-yellow-400"
+                          : "text-red-400"
+                          }`}
                       >
                         {parseFloat(costChange) >= 0 ? "+" : ""}
                         {costChange}% projected
@@ -629,132 +655,50 @@ export default function Dashboard() {
                   Models by Usage
                 </h2>
                 <div className="space-y-4">
-                  {[
-                    {
-                      name: "sentiment-analysis-v2.pt",
-                      requests: 1247,
-                      cost: 23.45,
-                      trend: "+15%",
-                      size: "45.2 MB",
-                      type: "pt",
-                      uploadTime: "2024-01-15, 3:24 PM",
-                    },
-                    {
-                      name: "image-classifier-prod.pt",
-                      requests: 892,
-                      cost: 18.72,
-                      trend: "+8%",
-                      size: "128.5 MB",
-                      type: "pt",
-                      uploadTime: "2024-01-18, 10:15 AM",
-                    },
-                    {
-                      name: "text-summarizer-beta.pt",
-                      requests: 634,
-                      cost: 12.18,
-                      trend: "+22%",
-                      size: "67.8 MB",
-                      type: "pt",
-                      uploadTime: "2024-01-20, 2:45 PM",
-                    },
-                    {
-                      name: "fraud-detector-v1.pt",
-                      requests: 423,
-                      cost: 8.91,
-                      trend: "-3%",
-                      size: "32.1 MB",
-                      type: "pt",
-                      uploadTime: "2024-01-12, 9:30 AM",
-                    },
-                    {
-                      name: "recommendation-engine.pt",
-                      requests: 298,
-                      cost: 6.24,
-                      trend: "+5%",
-                      size: "89.3 MB",
-                      type: "pt",
-                      uploadTime: "2024-01-22, 4:20 PM",
-                    },
-                  ].map((model, index) => (
-                    <div
-                      key={index}
-                      onClick={() =>
-                        handleModelClick({
-                          id: `mock-${index}`,
-                          name: model.name,
-                          size: model.size,
-                          type: model.type,
-                          status: "deployed" as const,
-                          uploadTime: model.uploadTime,
-                          endpoint: `https://api.weave.ai/v1/models/mock-${index}`,
-                        })
-                      }
-                      className="glass-strong rounded-xl p-4 border border-gray-700/30 hover:bg-white/5 transition-all duration-300 cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-1">
+                  {s3Loading && (
+                    <div className="text-sm text-gray-400">Loading models...</div>
+                  )}
+                  {!s3Loading && s3Items.length === 0 && (
+                    <div className="text-sm text-gray-400">No models found.</div>
+                  )}
+                  {!s3Loading && s3Items.length > 0 && (
+                    s3Items.map((item) => (
+                      <div
+                        key={item.key}
+                        className="glass-strong rounded-xl p-4 border border-gray-700/30 hover:bg-white/5 transition-all duration-300"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
                             <h4 className="text-lg font-light text-white">
-                              {model.name}
+                              {item.fileName || item.key}
                             </h4>
-                            <span
-                              className={`text-xs px-2 py-1 rounded-full font-light ${
-                                model.trend.startsWith("+")
-                                  ? "bg-green-500/20 text-green-400"
-                                  : "bg-red-500/20 text-red-400"
-                              }`}
+                            <p className="text-xs text-gray-500 break-all">{item.key}</p>
+                          </div>
+                          {item.url ? (
+                            <button
+                              onClick={() => {
+                                setSelectedModel({
+                                  id: item.key,
+                                  name: item.fileName || item.key,
+                                  size: item.size != null ? `${(item.size / (1024 * 1024)).toFixed(2)} MB` : 'Unknown',
+                                  type: item.fileName?.split('.').pop()?.toUpperCase() || 'FILE',
+                                  status: 'deployed',
+                                  uploadTime: item.lastModified || '',
+                                  endpoint: `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.weave.ai'}/v1/models/${encodeURIComponent(item.fileName || item.key)}`,
+                                });
+                                setShowModal(true);
+                              }}
+                              className="inline-block bg-transparent text-white px-3 py-1.5 rounded border border-gray-700/50 text-xs font-medium hover:bg-white/10 transition-colors"
                             >
-                              {model.trend}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-6 text-sm text-gray-400">
-                            <span className="flex items-center space-x-1">
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                                />
-                              </svg>
-                              <span>
-                                {model.requests.toLocaleString()} requests
-                              </span>
-                            </span>
-                            <span className="flex items-center space-x-1">
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                              <span>${model.cost}</span>
-                            </span>
-                          </div>
-                        </div>
-                        <div className="w-20 h-2 bg-gray-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500"
-                            style={{
-                              width: `${(model.requests / 1247) * 100}%`,
-                            }}
-                          />
+                              Actions
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-500">No URL</span>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -775,24 +719,21 @@ export default function Dashboard() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`group glass-card rounded-2xl p-12 mb-12 transition-all duration-500 border cursor-pointer ${
-                  isDragging
-                    ? "border-indigo-400 bg-indigo-500/10 scale-[1.02] shadow-2xl shadow-indigo-500/20"
-                    : "border-gray-800 hover:border-indigo-500/50 hover:bg-gray-800/30 hover:shadow-lg hover:shadow-indigo-500/10"
-                }`}
+                className={`group glass-card rounded-2xl p-12 mb-12 transition-all duration-500 border cursor-pointer ${isDragging
+                  ? "border-indigo-400 bg-indigo-500/10 scale-[1.02] shadow-2xl shadow-indigo-500/20"
+                  : "border-gray-800 hover:border-indigo-500/50 hover:bg-gray-800/30 hover:shadow-lg hover:shadow-indigo-500/10"
+                  }`}
               >
                 <div className="text-center">
                   <div
-                    className={`inline-flex items-center justify-center w-20 h-20 bg-gray-800 rounded-2xl mb-6 transition-all duration-500 group-hover:scale-110 group-hover:bg-indigo-600/20 ${
-                      isDragging
-                        ? "animate-bounce scale-110 bg-indigo-600/30"
-                        : ""
-                    }`}
+                    className={`inline-flex items-center justify-center w-20 h-20 bg-gray-800 rounded-2xl mb-6 transition-all duration-500 group-hover:scale-110 group-hover:bg-indigo-600/20 ${isDragging
+                      ? "animate-bounce scale-110 bg-indigo-600/30"
+                      : ""
+                      }`}
                   >
                     <svg
-                      className={`w-10 h-10 text-gray-400 transition-all duration-500 group-hover:text-white group-hover:scale-110 ${
-                        isDragging ? "text-indigo-400 animate-pulse" : ""
-                      }`}
+                      className={`w-10 h-10 text-gray-400 transition-all duration-500 group-hover:text-white group-hover:scale-110 ${isDragging ? "text-indigo-400 animate-pulse" : ""
+                        }`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -807,11 +748,10 @@ export default function Dashboard() {
                   </div>
 
                   <h3
-                    className={`text-2xl font-light text-white mb-3 transition-all duration-300 ${
-                      isDragging
-                        ? "text-indigo-300"
-                        : "group-hover:text-indigo-200"
-                    }`}
+                    className={`text-2xl font-light text-white mb-3 transition-all duration-300 ${isDragging
+                      ? "text-indigo-300"
+                      : "group-hover:text-indigo-200"
+                      }`}
                   >
                     {isDragging
                       ? "Drop your model here"
@@ -827,11 +767,10 @@ export default function Dashboard() {
                       className="cursor-pointer group"
                     >
                       <span
-                        className={`inline-block bg-white text-black px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 group-hover:bg-gray-100 group-hover:scale-105 ${
-                          isDragging
-                            ? "bg-indigo-100 text-indigo-800 scale-105"
-                            : ""
-                        }`}
+                        className={`inline-block bg-white text-black px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 group-hover:bg-gray-100 group-hover:scale-105 ${isDragging
+                          ? "bg-indigo-100 text-indigo-800 scale-105"
+                          : ""
+                          }`}
                       >
                         Choose File
                       </span>
@@ -844,11 +783,10 @@ export default function Dashboard() {
                       />
                     </label>
                     <button
-                      className={`glass-card px-6 py-2.5 rounded-lg text-sm font-light text-gray-300 transition-all duration-300 group-hover:bg-white/5 group-hover:text-white group-hover:scale-105 ${
-                        isDragging
-                          ? "bg-indigo-800/30 text-indigo-200 scale-105"
-                          : ""
-                      }`}
+                      className={`glass-card px-6 py-2.5 rounded-lg text-sm font-light text-gray-300 transition-all duration-300 group-hover:bg-white/5 group-hover:text-white group-hover:scale-105 ${isDragging
+                        ? "bg-indigo-800/30 text-indigo-200 scale-105"
+                        : ""
+                        }`}
                     >
                       Connect Git Repo
                     </button>
@@ -856,11 +794,10 @@ export default function Dashboard() {
 
                   {selectedFile && (
                     <div
-                      className={`mt-6 inline-block px-4 py-2 rounded-lg border transition-all duration-300 ${
-                        isDragging
-                          ? "bg-indigo-800/30 border-indigo-500 text-indigo-200"
-                          : "bg-gray-800 border-gray-700 text-gray-300 group-hover:bg-gray-700/50 group-hover:border-gray-600"
-                      }`}
+                      className={`mt-6 inline-block px-4 py-2 rounded-lg border transition-all duration-300 ${isDragging
+                        ? "bg-indigo-800/30 border-indigo-500 text-indigo-200"
+                        : "bg-gray-800 border-gray-700 text-gray-300 group-hover:bg-gray-700/50 group-hover:border-gray-600"
+                        }`}
                     >
                       <p className="text-sm">
                         Selected:{" "}
@@ -1088,7 +1025,7 @@ export default function Dashboard() {
                         Total Models
                       </p>
                       <p className="text-3xl font-light text-white">
-                        {models.length}
+                        {s3Items.length}
                       </p>
                     </div>
                     <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-500/20 backdrop-blur-sm">
@@ -1151,15 +1088,14 @@ export default function Dashboard() {
                     {selectedModel.type}
                   </span>
                   <span
-                    className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${
-                      selectedModel.status === "deployed"
-                        ? "bg-green-500/10 text-green-400 border-green-500/20"
-                        : selectedModel.status === "processing"
+                    className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${selectedModel.status === "deployed"
+                      ? "bg-green-500/10 text-green-400 border-green-500/20"
+                      : selectedModel.status === "processing"
                         ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
                         : selectedModel.status === "uploading"
-                        ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                        : "bg-red-500/10 text-red-400 border-red-500/20"
-                    }`}
+                          ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                          : "bg-red-500/10 text-red-400 border-red-500/20"
+                      }`}
                   >
                     <span className="capitalize">{selectedModel.status}</span>
                   </span>
@@ -1196,9 +1132,25 @@ export default function Dashboard() {
 
               {selectedModel.endpoint &&
                 selectedModel.status === "deployed" && (
-                  <div className="glass rounded-lg p-4 border border-gray-700/30">
+                  <div className="glass rounded-lg p-4 border border-gray-700/30 relative">
                     <p className="text-xs text-gray-500 mb-2">API Endpoint</p>
-                    <code className="text-sm text-indigo-400 font-mono break-all">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(selectedModel.endpoint!);
+                        } catch (e) {
+                          // no-op
+                        }
+                      }}
+                      className="absolute top-2 right-2 inline-flex items-center space-x-1 px-3 py-1.5 rounded border border-gray-700/50 text-xs font-medium text-white hover:bg-white/10 transition-colors"
+                      title="Copy endpoint"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2M16 8h2a2 2 0 012 2v8a2 2 0 01-2 2h-8a2 2 0 01-2-2v-2" />
+                      </svg>
+                      <span>Copy</span>
+                    </button>
+                    <code className="text-sm text-indigo-400 font-mono break-all block pr-20">
                       {selectedModel.endpoint}
                     </code>
                   </div>
@@ -1210,11 +1162,10 @@ export default function Dashboard() {
               <button
                 onClick={handleInference}
                 disabled={selectedModel.status !== "deployed"}
-                className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-                  selectedModel.status === "deployed"
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105"
-                    : "bg-gray-800 text-gray-500 cursor-not-allowed"
-                }`}
+                className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 ${selectedModel.status === "deployed"
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105"
+                  : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                  }`}
               >
                 <svg
                   className="w-5 h-5"
@@ -1297,11 +1248,10 @@ export default function Dashboard() {
             <button
               onClick={handleRunInference}
               disabled={!inferenceInput.trim()}
-              className={`w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 mb-6 ${
-                inferenceInput.trim()
-                  ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02]"
-                  : "bg-gray-800 text-gray-500 cursor-not-allowed"
-              }`}
+              className={`w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 mb-6 ${inferenceInput.trim()
+                ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02]"
+                : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                }`}
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />

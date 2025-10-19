@@ -1,0 +1,93 @@
+========================================
+UPLOAD LAMBDA PACKAGE TO AWS
+========================================
+
+Package Ready: lambda-deployment-linux.zip (56.91 MB)
+Function: weave-inference
+URL: https://65z5ujs4um7kmvxvgwm33eddty0rsbkv.lambda-url.us-east-1.on.aws/
+
+========================================
+OPTION 1: AWS Console (EASIEST)
+========================================
+
+Step 1: Upload to S3
+-------------------
+1. Go to: https://s3.console.aws.amazon.com/s3/buckets/weave-model-storage
+2. Click on 'lambda/' folder (create if doesn't exist)
+3. Click "Upload"
+4. Select: lambda-deployment-linux.zip
+5. Click "Upload"
+
+Step 2: Update Lambda
+--------------------
+1. Go to: https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions/weave-inference
+2. Click "Upload from" dropdown
+3. Select "Amazon S3 location"
+4. Enter: s3://weave-model-storage/lambda/lambda-deployment-linux.zip
+5. Click "Save"
+6. Wait for upload to complete (~1-2 minutes)
+
+========================================
+OPTION 2: AWS CLI
+========================================
+
+If you have AWS CLI installed, run:
+
+aws s3 cp lambda-deployment-linux.zip s3://weave-model-storage/lambda/lambda-deployment-linux.zip
+
+aws lambda update-function-code --function-name weave-inference --s3-bucket weave-model-storage --s3-key lambda/lambda-deployment-linux.zip
+
+========================================
+TEST THE DEPLOYMENT
+========================================
+
+After uploading, test with PowerShell:
+
+cd C:\Users\lakes\weave\backend\lambda
+powershell -File test_curl.ps1
+
+Or test with curl (if installed):
+
+curl -X POST "https://65z5ujs4um7kmvxvgwm33eddty0rsbkv.lambda-url.us-east-1.on.aws/" -H "Content-Type: application/json" -d "{\"uid\":\"user123\",\"model_name\":\"sentiment-model.onnx\",\"input\":\"This product is amazing!\"}"
+
+========================================
+UPLOAD MODEL TO S3
+========================================
+
+Don't forget to upload the model file:
+
+1. Go to: https://s3.console.aws.amazon.com/s3/buckets/weave-model-storage
+2. Create folder: user123
+3. Upload: sentiment-model.onnx to user123/ folder
+4. Final path: s3://weave-model-storage/user123/sentiment-model.onnx
+
+========================================
+EXPECTED RESPONSE
+========================================
+
+{
+  "prediction": {
+    "predicted_class": 1,
+    "sentiment": "positive",
+    "confidence": 1.0,
+    "probabilities": [0.0, 1.0]
+  },
+  "model": "sentiment-model.onnx",
+  "uid": "user123",
+  "latency_ms": 150,
+  "model_type": "onnx"
+}
+
+========================================
+TROUBLESHOOTING
+========================================
+
+If you see the Windows DLL error again:
+- Make sure you uploaded lambda-deployment-linux.zip (NOT lambda-deployment.zip)
+- The new package has Linux-compatible numpy and onnxruntime
+
+If model not found:
+- Upload sentiment-model.onnx to S3: s3://weave-model-storage/user123/sentiment-model.onnx
+
+========================================
+

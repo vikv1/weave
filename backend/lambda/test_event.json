@@ -1,0 +1,6 @@
+{
+  "uid": "user123",
+  "model_name": "sentiment-model.onnx",
+  "input": "This product is amazing! I love it!"
+}
+

@@ -207,18 +207,17 @@ export default function Dashboard() {
 
   const handleFileUpload = async (file: File) => {
     setSelectedFile(file);
-
+  
     console.log("file uploading...");
-
+  
     try {
-
       const fileContent = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-
+  
       const res = await fetch('/api/s3', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,17 +227,42 @@ export default function Dashboard() {
           fileType: file.type,
         }),
       });
-
+  
       if (!res.ok) {
         const error = await res.json();
         console.error('Upload failed:', error);
+        alert(`Upload failed: ${error.error || 'Unknown error'}`);
         return;
       }
-
+  
       const result = await res.json();
       console.log('Upload successful:', result);
+      
+      // Show success message
+      alert('File uploaded successfully!');
+      
+      // Refresh the S3 items list
+      if (user) {
+        setS3Loading(true);
+        try {
+          const listRes = await fetch('/api/s3');
+          if (listRes.ok) {
+            const data = await listRes.json();
+            setS3Items(Array.isArray(data?.items) ? data.items : []);
+          }
+        } catch (e) {
+          console.error('Failed to refresh list:', e);
+        } finally {
+          setS3Loading(false);
+        }
+      }
+      
+      // Clear selected file
+      setSelectedFile(null);
+      
     } catch (error) {
       console.error('Upload error:', error);
+      alert('Upload failed. Please try again.');
     }
   };
 

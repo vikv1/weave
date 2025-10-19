@@ -29,11 +29,19 @@ export function SignUpForm({
     setIsLoading(true);
     setError(null);
 
+    // Determine the correct redirect URL based on environment
+    const isDevelopment =
+      process.env.NODE_ENV === "development" ||
+      window.location.hostname === "localhost";
+    const baseUrl = isDevelopment
+      ? "http://localhost:3000"
+      : "https://weave-sooty.vercel.app";
+
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          redirectTo: `${baseUrl}/auth/callback?next=/dashboard`,
         },
       });
       if (error) throw error;

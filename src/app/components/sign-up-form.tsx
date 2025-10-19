@@ -30,7 +30,9 @@ export function SignUpForm({
     setError(null);
 
     // Determine the correct redirect URL based on environment
-    const isDevelopment = process.env.NODE_ENV === "development";
+    const isDevelopment =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
     const baseUrl = isDevelopment
       ? "http://localhost:3000"
       : "https://weave-sooty.vercel.app";

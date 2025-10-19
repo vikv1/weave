@@ -47,6 +47,11 @@ export default function Dashboard() {
   const [isDragging, setIsDragging] = useState(false);
   const [models, setModels] = useState<UploadedModel[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedModel, setSelectedModel] = useState<UploadedModel | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showInferenceModal, setShowInferenceModal] = useState(false);
+  const [inferenceInput, setInferenceInput] = useState('');
+  const [inferenceOutput, setInferenceOutput] = useState('');
 
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -127,6 +132,60 @@ export default function Dashboard() {
         )
       );
     }, 4000);
+  };
+
+  const handleModelClick = (model: UploadedModel) => {
+    setSelectedModel(model);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedModel(null);
+  };
+
+  const handleDeleteModel = () => {
+    if (selectedModel) {
+      setModels((prev) => prev.filter((m) => m.id !== selectedModel.id));
+      handleCloseModal();
+    }
+  };
+
+  const handleInference = () => {
+    if (selectedModel) {
+      setShowInferenceModal(true);
+      setInferenceInput('');
+      setInferenceOutput('');
+    }
+  };
+
+  const handleRunInference = () => {
+    if (!inferenceInput.trim()) {
+      alert('Please enter input data');
+      return;
+    }
+    
+    // Simulate inference processing
+    setInferenceOutput('Processing...');
+    
+    setTimeout(() => {
+      // Mock inference result
+      const mockResult = {
+        model: selectedModel?.name,
+        input: inferenceInput,
+        prediction: Math.random() > 0.5 ? 'positive' : 'negative',
+        confidence: (Math.random() * 0.3 + 0.7).toFixed(3),
+        latency: `${Math.floor(Math.random() * 200 + 100)}ms`
+      };
+      
+      setInferenceOutput(JSON.stringify(mockResult, null, 2));
+    }, 1500);
+  };
+
+  const handleCloseInferenceModal = () => {
+    setShowInferenceModal(false);
+    setInferenceInput('');
+    setInferenceOutput('');
   };
 
   const getStatusColor = (status: UploadedModel['status']) => {
@@ -411,13 +470,25 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-light text-white mb-6">Models by Usage</h2>
                 <div className="space-y-4">
                   {[
-                    { name: 'sentiment-analysis-v2', requests: 1247, cost: 23.45, trend: '+15%' },
-                    { name: 'image-classifier-prod', requests: 892, cost: 18.72, trend: '+8%' },
-                    { name: 'text-summarizer-beta', requests: 634, cost: 12.18, trend: '+22%' },
-                    { name: 'fraud-detector-v1', requests: 423, cost: 8.91, trend: '-3%' },
-                    { name: 'recommendation-engine', requests: 298, cost: 6.24, trend: '+5%' },
+                    { name: 'sentiment-analysis-v2.pt', requests: 1247, cost: 23.45, trend: '+15%', size: '45.2 MB', type: 'pt', uploadTime: '2024-01-15, 3:24 PM' },
+                    { name: 'image-classifier-prod.pt', requests: 892, cost: 18.72, trend: '+8%', size: '128.5 MB', type: 'pt', uploadTime: '2024-01-18, 10:15 AM' },
+                    { name: 'text-summarizer-beta.pt', requests: 634, cost: 12.18, trend: '+22%', size: '67.8 MB', type: 'pt', uploadTime: '2024-01-20, 2:45 PM' },
+                    { name: 'fraud-detector-v1.pt', requests: 423, cost: 8.91, trend: '-3%', size: '32.1 MB', type: 'pt', uploadTime: '2024-01-12, 9:30 AM' },
+                    { name: 'recommendation-engine.pt', requests: 298, cost: 6.24, trend: '+5%', size: '89.3 MB', type: 'pt', uploadTime: '2024-01-22, 4:20 PM' },
                   ].map((model, index) => (
-                    <div key={index} className="glass-strong rounded-xl p-4 border border-gray-700/30 hover:bg-white/5 transition-all duration-300">
+                    <div 
+                      key={index} 
+                      onClick={() => handleModelClick({
+                        id: `mock-${index}`,
+                        name: model.name,
+                        size: model.size,
+                        type: model.type,
+                        status: 'deployed' as const,
+                        uploadTime: model.uploadTime,
+                        endpoint: `https://api.weave.ai/v1/models/mock-${index}`
+                      })}
+                      className="glass-strong rounded-xl p-4 border border-gray-700/30 hover:bg-white/5 transition-all duration-300 cursor-pointer"
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-1">
@@ -555,7 +626,8 @@ export default function Dashboard() {
                 {models.map((model) => (
                   <div
                     key={model.id}
-                    className="glass-strong rounded-xl p-6 hover:bg-white/5 transition-all duration-300 border border-gray-700/30 hover:border-gray-600/50"
+                    onClick={() => handleModelClick(model)}
+                    className="glass-strong rounded-xl p-6 hover:bg-white/5 transition-all duration-300 border border-gray-700/30 hover:border-gray-600/50 cursor-pointer"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -767,6 +839,195 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Modal */}
+      {showModal && selectedModel && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={handleCloseModal}
+        >
+          <div 
+            className="glass-strong rounded-2xl p-8 max-w-2xl w-full border border-gray-700/50 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-light text-white mb-2">{selectedModel.name}</h2>
+                <div className="flex items-center space-x-4 text-sm text-gray-400">
+                  <span className="flex items-center space-x-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <span>{selectedModel.size}</span>
+                  </span>
+                  <span className="uppercase text-xs font-mono bg-gray-700 px-2 py-0.5 rounded">
+                    {selectedModel.type}
+                  </span>
+                  <span className={`inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${
+                    selectedModel.status === 'deployed' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                    selectedModel.status === 'processing' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                    selectedModel.status === 'uploading' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                    'bg-red-500/10 text-red-400 border-red-500/20'
+                  }`}>
+                    <span className="capitalize">{selectedModel.status}</span>
+                  </span>
+                </div>
+              </div>
+              <button 
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Model Details */}
+            <div className="mb-8 space-y-4">
+              <div className="glass rounded-lg p-4 border border-gray-700/30">
+                <p className="text-xs text-gray-500 mb-1">Upload Time</p>
+                <p className="text-sm text-gray-300">{selectedModel.uploadTime}</p>
+              </div>
+              
+              {selectedModel.endpoint && selectedModel.status === 'deployed' && (
+                <div className="glass rounded-lg p-4 border border-gray-700/30">
+                  <p className="text-xs text-gray-500 mb-2">API Endpoint</p>
+                  <code className="text-sm text-indigo-400 font-mono break-all">
+                    {selectedModel.endpoint}
+                  </code>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleInference}
+                disabled={selectedModel.status !== 'deployed'}
+                className={`flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
+                  selectedModel.status === 'deployed'
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105'
+                    : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                <span>Inference</span>
+              </button>
+              
+              <button
+                onClick={handleDeleteModel}
+                className="px-6 py-3 rounded-lg font-medium border-2 border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500 transition-all duration-300 hover:scale-105"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inference Modal */}
+      {showInferenceModal && selectedModel && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={handleCloseInferenceModal}
+        >
+          <div 
+            className="glass-strong rounded-2xl p-8 max-w-4xl w-full border border-gray-700/50 shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between mb-6">
+              <div>
+                <h2 className="text-3xl font-light text-white mb-2">Run Inference</h2>
+                <p className="text-gray-400 text-sm">
+                  Model: <span className="text-indigo-400 font-mono">{selectedModel.name}</span>
+                </p>
+              </div>
+              <button 
+                onClick={handleCloseInferenceModal}
+                className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Input Section */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-3">
+                Input Data
+              </label>
+              <textarea
+                value={inferenceInput}
+                onChange={(e) => setInferenceInput(e.target.value)}
+                placeholder='Enter your input data (e.g., "This is a great product!" or JSON format)'
+                className="w-full h-40 bg-gray-900/50 border border-gray-700 rounded-lg p-4 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm resize-none"
+              />
+            </div>
+
+            {/* Run Button */}
+            <button
+              onClick={handleRunInference}
+              disabled={!inferenceInput.trim()}
+              className={`w-full flex items-center justify-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 mb-6 ${
+                inferenceInput.trim()
+                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-[1.02]'
+                  : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              <span>Run Inference</span>
+            </button>
+
+            {/* Output Section */}
+            {inferenceOutput && (
+              <div className="animate-fade-in">
+                <label className="block text-sm font-medium text-gray-300 mb-3">
+                  Output
+                </label>
+                <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4 relative">
+                  <pre className="text-green-400 font-mono text-sm whitespace-pre-wrap overflow-x-auto">
+                    {inferenceOutput}
+                  </pre>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(inferenceOutput);
+                      alert('Copied to clipboard!');
+                    }}
+                    className="absolute top-3 right-3 p-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
+                    title="Copy to clipboard"
+                  >
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* API Example */}
+            <div className="mt-6 glass rounded-lg p-4 border border-gray-700/30">
+              <p className="text-xs text-gray-500 mb-2">API Endpoint</p>
+              <code className="text-sm text-indigo-400 font-mono break-all">
+                POST {selectedModel.endpoint}
+              </code>
+              <p className="text-xs text-gray-500 mt-3 mb-2">cURL Example</p>
+              <pre className="text-xs text-gray-400 font-mono bg-gray-900/50 p-3 rounded overflow-x-auto">
+{`curl -X POST ${selectedModel.endpoint} \\
+  -H "Content-Type: application/json" \\
+  -d '{"input": "your input data here"}'`}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1132,9 +1132,25 @@ export default function Dashboard() {
 
               {selectedModel.endpoint &&
                 selectedModel.status === "deployed" && (
-                  <div className="glass rounded-lg p-4 border border-gray-700/30">
+                  <div className="glass rounded-lg p-4 border border-gray-700/30 relative">
                     <p className="text-xs text-gray-500 mb-2">API Endpoint</p>
-                    <code className="text-sm text-indigo-400 font-mono break-all">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(selectedModel.endpoint!);
+                        } catch (e) {
+                          // no-op
+                        }
+                      }}
+                      className="absolute top-2 right-2 inline-flex items-center space-x-1 px-3 py-1.5 rounded border border-gray-700/50 text-xs font-medium text-white hover:bg-white/10 transition-colors"
+                      title="Copy endpoint"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2M16 8h2a2 2 0 012 2v8a2 2 0 01-2 2h-8a2 2 0 01-2-2v-2" />
+                      </svg>
+                      <span>Copy</span>
+                    </button>
+                    <code className="text-sm text-indigo-400 font-mono break-all block pr-20">
                       {selectedModel.endpoint}
                     </code>
                   </div>

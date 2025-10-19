@@ -72,7 +72,7 @@ interface S3Item {
 
 export default function Dashboard() {
   const supabase = createClient();
-  const [activeTab, setActiveTab] = useState<"upload" | "home">("home");
+  const [activeTab, setActiveTab] = useState<"upload" | "home" | "fabric">("home");
   const [isDragging, setIsDragging] = useState(false);
   const [models, setModels] = useState<UploadedModel[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -106,6 +106,11 @@ export default function Dashboard() {
   const [showInferenceModal, setShowInferenceModal] = useState(false);
   const [inferenceInput, setInferenceInput] = useState("");
   const [inferenceOutput, setInferenceOutput] = useState("");
+  const [showDeploymentModal, setShowDeploymentModal] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState("");
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -207,38 +212,80 @@ export default function Dashboard() {
 
   const handleFileUpload = async (file: File) => {
     setSelectedFile(file);
+    setPendingFile(file);
+    setShowDeploymentModal(true);
+  };
 
-    console.log("file uploading...");
+  const handleDeploymentTypeSelected = async (type: "thread" | "fabric") => {
+    setShowDeploymentModal(false);
+    
+    if (!pendingFile) return;
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadStatus("Preparing file...");
 
     try {
-
+      // Step 1: Read file (0-25%)
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setUploadProgress(25);
+      setUploadStatus("Reading file data...");
+      
       const fileContent = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(pendingFile);
       });
+
+      // Step 2: Uploading to S3 (25-60%)
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setUploadProgress(60);
+      setUploadStatus("Uploading to storage...");
 
       const res = await fetch('/api/s3', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fileName: file.name,
+          fileName: pendingFile.name,
           fileContent: fileContent,
-          fileType: file.type,
+          fileType: pendingFile.type,
+          deploymentType: type,
         }),
       });
 
       if (!res.ok) {
         const error = await res.json();
         console.error('Upload failed:', error);
+        setUploadStatus("Upload failed!");
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setIsUploading(false);
         return;
       }
 
       const result = await res.json();
-      console.log('Upload successful:', result);
+
+      // Step 3: Deploying (60-90%)
+      setUploadProgress(90);
+      setUploadStatus(`Deploying as ${type === "thread" ? "Thread" : "Fabric"}...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 4: Complete (90-100%)
+      setUploadProgress(100);
+      setUploadStatus("Deployment successful! 🎉");
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setIsUploading(false);
+      setPendingFile(null);
+      
+      // Reload to show new models
+      window.location.reload();
     } catch (error) {
       console.error('Upload error:', error);
+      setUploadStatus("An error occurred");
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setIsUploading(false);
+      setPendingFile(null);
     }
   };
 
@@ -431,6 +478,15 @@ export default function Dashboard() {
                 >
                   Upload
                 </button>
+                <button
+                  onClick={() => setActiveTab("fabric")}
+                  className={`px-4 py-2 rounded-md text-sm font-light transition-all duration-300 ${activeTab === "fabric"
+                    ? "bg-white text-black"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                    }`}
+                >
+                  Fabric
+                </button>
               </div>
 
               <div className="px-4 py-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center cursor-pointer">
@@ -449,7 +505,316 @@ export default function Dashboard() {
       <div className="pt-32 pb-20 px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {/* Tab Content */}
-          {activeTab === "home" ? (
+          {activeTab === "fabric" ? (
+            <div>
+              {/* Fabric Tab - Long-Running Server Deployments */}
+              <div className="mb-12">
+                <h1 className="text-4xl md:text-5xl font-light text-white mb-2">
+                  Fabric Deployments
+                </h1>
+                <p className="text-gray-400 font-light">
+                  Manage your containerized ML models on persistent servers
+                </p>
+              </div>
+
+              {/* Server Stats Grid */}
+              <div className="grid md:grid-cols-4 gap-6 mb-12">
+                <div className="glass-card rounded-xl p-6 border border-gray-800/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-gray-400 font-light">Active Instances</p>
+                    <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-light text-white">12</p>
+                  <p className="text-xs text-green-400 mt-1">+3 this week</p>
+                </div>
+
+                <div className="glass-card rounded-xl p-6 border border-gray-800/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-gray-400 font-light">Avg Uptime</p>
+                    <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-light text-white">99.8%</p>
+                  <p className="text-xs text-gray-400 mt-1">Last 30 days</p>
+                </div>
+
+                <div className="glass-card rounded-xl p-6 border border-gray-800/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-gray-400 font-light">Total CPU</p>
+                    <div className="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-light text-white">48</p>
+                  <p className="text-xs text-gray-400 mt-1">vCPUs allocated</p>
+                </div>
+
+                <div className="glass-card rounded-xl p-6 border border-gray-800/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-gray-400 font-light">Total Memory</p>
+                    <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center">
+                      <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-light text-white">192GB</p>
+                  <p className="text-xs text-gray-400 mt-1">Across all instances</p>
+                </div>
+              </div>
+
+              {/* Running Models */}
+              <div className="glass-card rounded-2xl p-8 border border-gray-800/50 mb-8">
+                <h2 className="text-2xl font-light text-white mb-6">Running Models</h2>
+                <div className="space-y-4">
+                  {[
+                    {
+                      name: "GPT-Style Text Generator",
+                      instances: 3,
+                      uptime: "45d 12h",
+                      requests: "2.4M",
+                      avgLatency: "125ms",
+                      cpu: "78%",
+                      memory: "32GB / 48GB",
+                      status: "healthy",
+                      container: "ml-gpt-prod-v2.3",
+                    },
+                    {
+                      name: "Image Classification ResNet",
+                      instances: 5,
+                      uptime: "23d 8h",
+                      requests: "5.1M",
+                      avgLatency: "45ms",
+                      cpu: "62%",
+                      memory: "28GB / 40GB",
+                      status: "healthy",
+                      container: "ml-resnet-prod-v1.8",
+                    },
+                    {
+                      name: "Recommendation Engine",
+                      instances: 2,
+                      uptime: "67d 3h",
+                      requests: "8.2M",
+                      avgLatency: "89ms",
+                      cpu: "45%",
+                      memory: "18GB / 32GB",
+                      status: "healthy",
+                      container: "ml-recsys-prod-v3.1",
+                    },
+                    {
+                      name: "Sentiment Analysis BERT",
+                      instances: 1,
+                      uptime: "12d 19h",
+                      requests: "892K",
+                      avgLatency: "210ms",
+                      cpu: "91%",
+                      memory: "15GB / 16GB",
+                      status: "warning",
+                      container: "ml-bert-prod-v1.2",
+                    },
+                  ].map((deployment, idx) => (
+                    <div
+                      key={idx}
+                      className="glass-strong rounded-xl p-6 border border-gray-700/30 hover:bg-white/5 transition-all duration-300"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="text-xl font-light text-white">
+                              {deployment.name}
+                            </h3>
+                            <span
+                              className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
+                                deployment.status === "healthy"
+                                  ? "bg-green-500/10 text-green-400 border-green-500/20"
+                                  : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                              }`}
+                            >
+                              <span
+                                className={`w-2 h-2 rounded-full ${
+                                  deployment.status === "healthy"
+                                    ? "bg-green-400 animate-pulse"
+                                    : "bg-yellow-400 animate-pulse"
+                                }`}
+                              ></span>
+                              <span className="capitalize">{deployment.status}</span>
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-500 font-mono mb-3">
+                            {deployment.container}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div className="glass rounded-lg p-3 border border-gray-700/30">
+                          <p className="text-xs text-gray-500 mb-1">Instances</p>
+                          <p className="text-lg font-light text-white">
+                            {deployment.instances}
+                          </p>
+                        </div>
+                        <div className="glass rounded-lg p-3 border border-gray-700/30">
+                          <p className="text-xs text-gray-500 mb-1">Uptime</p>
+                          <p className="text-lg font-light text-white">
+                            {deployment.uptime}
+                          </p>
+                        </div>
+                        <div className="glass rounded-lg p-3 border border-gray-700/30">
+                          <p className="text-xs text-gray-500 mb-1">Requests</p>
+                          <p className="text-lg font-light text-white">
+                            {deployment.requests}
+                          </p>
+                        </div>
+                        <div className="glass rounded-lg p-3 border border-gray-700/30">
+                          <p className="text-xs text-gray-500 mb-1">Avg Latency</p>
+                          <p className="text-lg font-light text-white">
+                            {deployment.avgLatency}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-4">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-gray-400">CPU Usage</span>
+                            <span className="text-white">{deployment.cpu}</span>
+                          </div>
+                          <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-500 ${
+                                parseInt(deployment.cpu) > 85
+                                  ? "bg-red-500"
+                                  : parseInt(deployment.cpu) > 70
+                                  ? "bg-yellow-500"
+                                  : "bg-green-500"
+                              }`}
+                              style={{ width: deployment.cpu }}
+                            ></div>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="text-gray-400">Memory</span>
+                            <span className="text-white">{deployment.memory}</span>
+                          </div>
+                          <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-blue-500 transition-all duration-500"
+                              style={{
+                                width: `${
+                                  (parseInt(deployment.memory.split("/")[0]) /
+                                    parseInt(
+                                      deployment.memory.split("/")[1].replace("GB", "")
+                                    )) *
+                                  100
+                                }%`,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 mt-4">
+                        <button className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors border border-gray-700">
+                          Scale
+                        </button>
+                        <button className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors border border-gray-700">
+                          Logs
+                        </button>
+                        <button className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors border border-gray-700">
+                          Metrics
+                        </button>
+                        <button className="px-4 py-2 bg-red-500/10 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/20 transition-colors border border-red-500/20">
+                          Stop
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cluster Info */}
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="glass-card rounded-2xl p-8 border border-gray-800/50">
+                  <h3 className="text-xl font-light text-white mb-6">Cluster Status</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Kubernetes Version</span>
+                      <span className="text-white font-mono text-sm">v1.28.3</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Total Nodes</span>
+                      <span className="text-white">8 (6 active, 2 standby)</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Total Pods</span>
+                      <span className="text-white">42 running</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Network Traffic</span>
+                      <span className="text-white">2.4 TB/day</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">Storage Used</span>
+                      <span className="text-white">1.2 TB / 5 TB</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="glass-card rounded-2xl p-8 border border-gray-800/50">
+                  <h3 className="text-xl font-light text-white mb-6">Recent Activity</h3>
+                  <div className="space-y-3">
+                    {[
+                      {
+                        action: "Scaled up",
+                        model: "Image Classification",
+                        time: "2 minutes ago",
+                      },
+                      {
+                        action: "Deployed",
+                        model: "New sentiment model v1.2",
+                        time: "1 hour ago",
+                      },
+                      {
+                        action: "Auto-healed",
+                        model: "Text Generator pod-3",
+                        time: "3 hours ago",
+                      },
+                      {
+                        action: "Updated",
+                        model: "Recommendation Engine v3.1",
+                        time: "5 hours ago",
+                      },
+                    ].map((activity, idx) => (
+                      <div
+                        key={idx}
+                        className="glass rounded-lg p-3 border border-gray-700/30 flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="text-white text-sm">
+                            <span className="text-indigo-400">{activity.action}</span>{" "}
+                            {activity.model}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {activity.time}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : activeTab === "home" ? (
             <div>
               {/* Home Tab */}
               <div className="mb-12">
@@ -652,7 +1017,7 @@ export default function Dashboard() {
               {/* Model Rankings */}
               <div className="glass-card rounded-2xl p-8 border border-gray-800/50 backdrop-blur-sm">
                 <h2 className="text-2xl font-light text-white mb-6">
-                  Models by Usage
+                  Models
                 </h2>
                 <div className="space-y-4">
                   {s3Loading && (
@@ -1307,6 +1672,263 @@ export default function Dashboard() {
   -H "Content-Type: application/json" \\
   -d '{"input": "your input data here"}'`}
               </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deployment Type Selection Modal */}
+      {showDeploymentModal && pendingFile && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowDeploymentModal(false);
+            setPendingFile(null);
+          }}
+        >
+          <div
+            className="glass-strong rounded-2xl p-8 max-w-2xl w-full border border-gray-700/50 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="mb-8">
+              <h2 className="text-3xl font-light text-white mb-2">
+                Choose Deployment Type
+              </h2>
+              <p className="text-gray-400 text-sm">
+                Select how you want to deploy{" "}
+                <span className="text-indigo-400 font-mono">{pendingFile.name}</span>
+              </p>
+            </div>
+
+            {/* Deployment Options */}
+            <div className="grid md:grid-cols-2 gap-6 mb-6">
+              {/* Thread Option */}
+              <button
+                onClick={() => handleDeploymentTypeSelected("thread")}
+                className="group relative glass-card rounded-xl p-6 border border-gray-700/50 hover:border-indigo-500/50 hover:bg-white/5 transition-all duration-300 text-left"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-indigo-500/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg
+                      className="w-6 h-6 text-indigo-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                  </div>
+                  {/* Help Icon with Tooltip */}
+                  <div className="relative group/tooltip">
+                    <div className="w-5 h-5 rounded-full border border-gray-600 text-gray-400 flex items-center justify-center text-xs cursor-help hover:border-indigo-400 hover:text-indigo-400 transition-colors">
+                      ?
+                    </div>
+                    <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
+                      <p className="text-xs text-gray-300">
+                        <strong className="text-white">Serverless Architecture:</strong> Deploy
+                        on our event-driven infrastructure. Automatically scales from zero to millions
+                        of requests. Pay only for actual compute time. Ideal for variable workloads.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 className="text-xl font-light text-white mb-2 group-hover:text-indigo-300 transition-colors">
+                  Thread
+                </h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Serverless inference engine
+                </p>
+
+                <div className="space-y-2 text-xs text-gray-500">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>Elastic scaling</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>Usage-based pricing</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>Cold-start optimization</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-700/50">
+                  <p className="text-xs text-gray-500">
+                    Best for: <span className="text-white">On-demand APIs, dynamic workloads</span>
+                  </p>
+                </div>
+              </button>
+
+              {/* Fabric Option */}
+              <button
+                onClick={() => handleDeploymentTypeSelected("fabric")}
+                className="group relative glass-card rounded-xl p-6 border border-gray-700/50 hover:border-purple-500/50 hover:bg-white/5 transition-all duration-300 text-left"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg
+                      className="w-6 h-6 text-purple-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
+                      />
+                    </svg>
+                  </div>
+                  {/* Help Icon with Tooltip */}
+                  <div className="relative group/tooltip">
+                    <div className="w-5 h-5 rounded-full border border-gray-600 text-gray-400 flex items-center justify-center text-xs cursor-help hover:border-purple-400 hover:text-purple-400 transition-colors">
+                      ?
+                    </div>
+                    <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-10">
+                      <p className="text-xs text-gray-300">
+                        <strong className="text-white">Persistent Containers:</strong> Deploy on
+                        dedicated servers with Kubernetes. Always-on instances, predictable latency,
+                        full control. Ideal for high-traffic production workloads.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 className="text-xl font-light text-white mb-2 group-hover:text-purple-300 transition-colors">
+                  Fabric
+                </h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Long-running server deployment
+                </p>
+
+                <div className="space-y-2 text-xs text-gray-500">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>Dedicated instances</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>Consistent latency</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>Full observability</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-700/50">
+                  <p className="text-xs text-gray-500">
+                    Best for: <span className="text-white">High-traffic apps, real-time</span>
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            {/* Cancel Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setShowDeploymentModal(false);
+                  setPendingFile(null);
+                }}
+                className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Progress Modal */}
+      {isUploading && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="glass-strong rounded-2xl p-8 max-w-md w-full border border-gray-700/50 shadow-2xl">
+            {/* Header */}
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full animate-pulse"></div>
+                <div className="absolute inset-2 bg-gray-900 rounded-full flex items-center justify-center">
+                  {uploadProgress === 100 ? (
+                    <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-8 h-8 text-indigo-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                </div>
+              </div>
+              
+              <h3 className="text-xl font-light text-white mb-2">
+                {uploadStatus}
+              </h3>
+              <p className="text-sm text-gray-400">
+                {uploadProgress < 100 ? "Please wait..." : "Redirecting..."}
+              </p>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="relative">
+              <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-500 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                >
+                  <div className="h-full w-full bg-white/20 animate-pulse"></div>
+                </div>
+              </div>
+              
+              {/* Progress Percentage */}
+              <div className="mt-2 text-center">
+                <span className="text-sm font-mono text-gray-400">
+                  {uploadProgress}%
+                </span>
+              </div>
+            </div>
+
+            {/* Progress Steps */}
+            <div className="mt-6 space-y-2">
+              <div className={`flex items-center space-x-2 text-xs ${uploadProgress >= 25 ? 'text-green-400' : 'text-gray-500'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${uploadProgress >= 25 ? 'bg-green-400' : 'bg-gray-600'}`}></div>
+                <span>Reading file data</span>
+              </div>
+              <div className={`flex items-center space-x-2 text-xs ${uploadProgress >= 60 ? 'text-green-400' : 'text-gray-500'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${uploadProgress >= 60 ? 'bg-green-400' : 'bg-gray-600'}`}></div>
+                <span>Uploading to storage</span>
+              </div>
+              <div className={`flex items-center space-x-2 text-xs ${uploadProgress >= 90 ? 'text-green-400' : 'text-gray-500'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${uploadProgress >= 90 ? 'bg-green-400' : 'bg-gray-600'}`}></div>
+                <span>Configuring deployment</span>
+              </div>
+              <div className={`flex items-center space-x-2 text-xs ${uploadProgress === 100 ? 'text-green-400' : 'text-gray-500'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${uploadProgress === 100 ? 'bg-green-400' : 'bg-gray-600'}`}></div>
+                <span>Deployment complete</span>
+              </div>
             </div>
           </div>
         </div>

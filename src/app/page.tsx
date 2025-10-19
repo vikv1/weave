@@ -3,9 +3,29 @@ import Navbar from "./components/navbar";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#0f0f0f]">
-      {/* Navigation */}
-      <Navbar />
+    <div className="min-h-screen bg-[#0f0f0f] relative overflow-hidden">
+      {/* Animated Background Gradients */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div 
+          className="absolute inset-0 opacity-30"
+          style={{
+            background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.15), transparent 50%, rgba(168, 85, 247, 0.1))',
+            animation: 'gradient-shift 15s ease infinite'
+          }}
+        ></div>
+        <div 
+          className="absolute inset-0 opacity-20"
+          style={{
+            background: 'linear-gradient(to top left, rgba(236, 72, 153, 0.12), transparent 50%, rgba(59, 130, 246, 0.08))',
+            animation: 'gradient-shift 20s ease-in-out infinite reverse'
+          }}
+        ></div>
+      </div>
+
+      {/* Content Wrapper */}
+      <div className="relative z-10">
+        {/* Navigation */}
+        <Navbar />
 
       {/* Hero Section */}
       <section className="pt-40 pb-20 px-6 lg:px-8">
@@ -40,7 +60,7 @@ export default function Home() {
           <div className="text-center mb-16 animate-fade-in-up animation-delay-500">
             <h2 className="text-3xl md:text-4xl font-light text-white mb-6">
               Are you still deploying ML models{" "}
-              <em className="italic">like it's 2015?</em>
+              <em className="italic">like it's 2024?</em>
             </h2>
             <p className="text-base md:text-lg text-gray-400 max-w-3xl mx-auto leading-relaxed font-light">
               Hours wasted on complex infrastructure — but enterprise ML
@@ -101,7 +121,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 animate-fade-in-up animation-delay-1000">
             <h2 className="text-3xl md:text-4xl font-light text-white mb-6">
-              Built for <em className="italic">ML Teams</em>
+              Built for <em className="italic">Everyone</em>
             </h2>
             <p className="text-base md:text-lg text-gray-400 max-w-3xl mx-auto font-light">
               Everything you need to deploy, scale, and monitor your ML models
@@ -234,6 +254,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

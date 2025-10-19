@@ -54,8 +54,7 @@ export function LoginForm({
 
     // Determine the correct redirect URL based on environment
     const isDevelopment =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
+      window.location.hostname === "localhost";
     const baseUrl = isDevelopment
       ? "http://localhost:3000"
       : "https://weave-sooty.vercel.app";

@@ -71,6 +71,7 @@ graph = helper.make_graph(
 # Create the model
 model = helper.make_model(graph, producer_name='weave-text-classifier')
 model.opset_import[0].version = 13
+model.ir_version = 8  # Compatible with onnxruntime
 
 # Check the model
 onnx.checker.check_model(model)
@@ -80,12 +81,12 @@ output_file = 'sentiment-model.onnx'
 with open(output_file, 'wb') as f:
     f.write(model.SerializeToString())
 
-print(f"✅ Model created: {output_file}")
+print(f"[OK] Model created: {output_file}")
 
 # Get size
 import os
 size_kb = os.path.getsize(output_file) / 1024
-print(f"📊 Model size: {size_kb:.2f} KB")
+print(f"[INFO] Model size: {size_kb:.2f} KB")
 
 # Test with onnxruntime if available
 try:
@@ -97,14 +98,14 @@ try:
     test_input = np.random.randn(1, 128).astype(np.float32)
     output = session.run(None, {'input': test_input})
     
-    print(f"\n🧪 Test inference:")
+    print(f"\n[TEST] Test inference:")
     print(f"   Input shape: {test_input.shape}")
     print(f"   Output shape: {output[0].shape}")
     print(f"   Probabilities: [negative={output[0][0][0]:.3f}, positive={output[0][0][1]:.3f}]")
     print(f"   Predicted: {'positive' if output[0][0][1] > output[0][0][0] else 'negative'}")
     
     # Test with different inputs
-    print(f"\n📝 Testing with different inputs:")
+    print(f"\n[TEST] Testing with different inputs:")
     for i in range(3):
         test_input = np.random.randn(1, 128).astype(np.float32) * (i + 1)
         output = session.run(None, {'input': test_input})
@@ -113,10 +114,10 @@ try:
         print(f"   Test {i+1}: {sentiment} (confidence: {confidence:.3f})")
     
 except ImportError:
-    print("\n⚠️  onnxruntime not installed, skipping test")
+    print("\n[WARNING] onnxruntime not installed, skipping test")
     print("   Model should work in Lambda")
 
-print(f"\n✅ Model ready!")
-print(f"\n📤 Upload to S3:")
+print(f"\n[SUCCESS] Model ready!")
+print(f"\n[INFO] Upload to S3:")
 print(f"aws s3 cp {output_file} s3://weave-model-storage/user123/{output_file}")
 

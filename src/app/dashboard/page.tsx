@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -19,15 +19,7 @@ const generateChartData = (points: number, base: number, variance: number) => {
   });
 };
 
-const requestData = generateChartData(14, 150, 60);
-const costData = generateChartData(14, 45, 20);
-
-// Calculate accurate percentages for display
-const requestChange = requestData.length > 1 ?
-  ((requestData[requestData.length - 1].value - requestData[0].value) / requestData[0].value * 100).toFixed(1) : '0.0';
-
-const costChange = costData.length > 1 ?
-  ((costData[costData.length - 1].value - costData[0].value) / costData[0].value * 100).toFixed(1) : '0.0';
+// requestData/costData are generated client-side after mount to avoid SSR mismatch
 
 interface UploadedModel {
   id: string;
@@ -44,6 +36,27 @@ export default function Dashboard() {
   const [isDragging, setIsDragging] = useState(false);
   const [models, setModels] = useState<UploadedModel[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [requestData, setRequestData] = useState<{ time: string; value: number }[]>([]);
+  const [costData, setCostData] = useState<{ time: string; value: number }[]>([]);
+
+  useEffect(() => {
+    setRequestData(generateChartData(14, 150, 60));
+    setCostData(generateChartData(14, 45, 20));
+  }, []);
+
+  const requestChange = useMemo(() => {
+    if (requestData.length < 2) return '0.0';
+    const first = requestData[0].value;
+    const last = requestData[requestData.length - 1].value;
+    return (((last - first) / first) * 100).toFixed(1);
+  }, [requestData]);
+
+  const costChange = useMemo(() => {
+    if (costData.length < 2) return '0.0';
+    const first = costData[0].value;
+    const last = costData[costData.length - 1].value;
+    return (((last - first) / first) * 100).toFixed(1);
+  }, [costData]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -72,42 +85,42 @@ export default function Dashboard() {
     }
   };
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
     setSelectedFile(file);
+  
+    console.log("file uploading...");
+    
+    try {
 
-    const newModel: UploadedModel = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-      type: file.name.split('.').pop() || 'unknown',
-      status: 'uploading',
-      uploadTime: new Date().toLocaleString(),
-    };
-
-    setModels((prev) => [newModel, ...prev]);
-
-    // Simulate upload process
-    setTimeout(() => {
-      setModels((prev) =>
-        prev.map((m) =>
-          m.id === newModel.id ? { ...m, status: 'processing' } : m
-        )
-      );
-    }, 1500);
-
-    setTimeout(() => {
-      setModels((prev) =>
-        prev.map((m) =>
-          m.id === newModel.id
-            ? {
-                ...m,
-                status: 'deployed',
-                endpoint: `https://api.weave.ai/v1/models/${newModel.id}`,
-              }
-            : m
-        )
-      );
-    }, 4000);
+      const fileContent = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+  
+      const res = await fetch('/api/s3', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: '1',
+          fileName: file.name,
+          fileContent: fileContent,  
+          fileType: file.type,
+        }),
+      });
+  
+      if (!res.ok) {
+        const error = await res.json();
+        console.error('Upload failed:', error);
+        return;
+      }
+  
+      const result = await res.json();
+      console.log('Upload successful:', result);
+    } catch (error) {
+      console.error('Upload error:', error);
+    }
   };
 
   const getStatusColor = (status: UploadedModel['status']) => {
@@ -216,21 +229,19 @@ export default function Dashboard() {
               <div className="glass-card rounded-lg p-1 flex space-x-1">
                 <button
                   onClick={() => setActiveTab('home')}
-                  className={`px-4 py-2 rounded-md text-sm font-light transition-all duration-300 ${
-                    activeTab === 'home'
-                      ? 'bg-white text-black'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
-                  }`}
+                  className={`px-4 py-2 rounded-md text-sm font-light transition-all duration-300 ${activeTab === 'home'
+                    ? 'bg-white text-black'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    }`}
                 >
                   Home
                 </button>
                 <button
                   onClick={() => setActiveTab('upload')}
-                  className={`px-4 py-2 rounded-md text-sm font-light transition-all duration-300 ${
-                    activeTab === 'upload'
-                      ? 'bg-white text-black'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
-                  }`}
+                  className={`px-4 py-2 rounded-md text-sm font-light transition-all duration-300 ${activeTab === 'upload'
+                    ? 'bg-white text-black'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    }`}
                 >
                   Upload
                 </button>
@@ -292,8 +303,8 @@ export default function Dashboard() {
                     <AreaChart data={requestData} margin={{ top: 5, right: 5, left: 5, bottom: 25 }}>
                       <defs>
                         <linearGradient id="requestsGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <XAxis
@@ -346,8 +357,8 @@ export default function Dashboard() {
                     <AreaChart data={costData} margin={{ top: 5, right: 5, left: 5, bottom: 25 }}>
                       <defs>
                         <linearGradient id="costGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <XAxis
@@ -403,9 +414,8 @@ export default function Dashboard() {
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-1">
                             <h4 className="text-lg font-light text-white">{model.name}</h4>
-                            <span className={`text-xs px-2 py-1 rounded-full font-light ${
-                              model.trend.startsWith('+') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                            }`}>
+                            <span className={`text-xs px-2 py-1 rounded-full font-light ${model.trend.startsWith('+') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                              }`}>
                               {model.trend}
                             </span>
                           </div>
@@ -448,301 +458,294 @@ export default function Dashboard() {
                 </p>
               </div>
 
-          {/* Upload Area */}
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`group glass-card rounded-2xl p-12 mb-12 transition-all duration-500 border cursor-pointer ${
-              isDragging
-                ? 'border-indigo-400 bg-indigo-500/10 scale-[1.02] shadow-2xl shadow-indigo-500/20'
-                : 'border-gray-800 hover:border-indigo-500/50 hover:bg-gray-800/30 hover:shadow-lg hover:shadow-indigo-500/10'
-            }`}
-          >
-            <div className="text-center">
-              <div className={`inline-flex items-center justify-center w-20 h-20 bg-gray-800 rounded-2xl mb-6 transition-all duration-500 group-hover:scale-110 group-hover:bg-indigo-600/20 ${
-                isDragging ? 'animate-bounce scale-110 bg-indigo-600/30' : ''
-              }`}>
-                <svg
-                  className={`w-10 h-10 text-gray-400 transition-all duration-500 group-hover:text-white group-hover:scale-110 ${
-                    isDragging ? 'text-indigo-400 animate-pulse' : ''
+              {/* Upload Area */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`group glass-card rounded-2xl p-12 mb-12 transition-all duration-500 border cursor-pointer ${isDragging
+                  ? 'border-indigo-400 bg-indigo-500/10 scale-[1.02] shadow-2xl shadow-indigo-500/20'
+                  : 'border-gray-800 hover:border-indigo-500/50 hover:bg-gray-800/30 hover:shadow-lg hover:shadow-indigo-500/10'
                   }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-              </div>
+              >
+                <div className="text-center">
+                  <div className={`inline-flex items-center justify-center w-20 h-20 bg-gray-800 rounded-2xl mb-6 transition-all duration-500 group-hover:scale-110 group-hover:bg-indigo-600/20 ${isDragging ? 'animate-bounce scale-110 bg-indigo-600/30' : ''
+                    }`}>
+                    <svg
+                      className={`w-10 h-10 text-gray-400 transition-all duration-500 group-hover:text-white group-hover:scale-110 ${isDragging ? 'text-indigo-400 animate-pulse' : ''
+                        }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      />
+                    </svg>
+                  </div>
 
-              <h3 className={`text-2xl font-light text-white mb-3 transition-all duration-300 ${
-                isDragging ? 'text-indigo-300' : 'group-hover:text-indigo-200'
-              }`}>
-                {isDragging
-                  ? 'Drop your model here'
-                  : 'Drag & drop your model file'}
-              </h3>
-              <p className="text-gray-400 text-sm mb-8 transition-all duration-300 group-hover:text-gray-300">
-                Supports PyTorch, TensorFlow, ONNX, scikit-learn
-              </p>
-
-              <div className="flex items-center justify-center space-x-4">
-                <label htmlFor="file-upload" className="cursor-pointer group">
-                  <span className={`inline-block bg-white text-black px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 group-hover:bg-gray-100 group-hover:scale-105 ${
-                    isDragging ? 'bg-indigo-100 text-indigo-800 scale-105' : ''
-                  }`}>
-                    Choose File
-                  </span>
-                  <input
-                    id="file-upload"
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                    accept=".pt,.pth,.h5,.pb,.onnx,.pkl"
-                  />
-                </label>
-                <button className={`glass-card px-6 py-2.5 rounded-lg text-sm font-light text-gray-300 transition-all duration-300 group-hover:bg-white/5 group-hover:text-white group-hover:scale-105 ${
-                  isDragging ? 'bg-indigo-800/30 text-indigo-200 scale-105' : ''
-                }`}>
-                  Connect Git Repo
-                </button>
-              </div>
-
-              {selectedFile && (
-                <div className={`mt-6 inline-block px-4 py-2 rounded-lg border transition-all duration-300 ${
-                  isDragging
-                    ? 'bg-indigo-800/30 border-indigo-500 text-indigo-200'
-                    : 'bg-gray-800 border-gray-700 text-gray-300 group-hover:bg-gray-700/50 group-hover:border-gray-600'
-                }`}>
-                  <p className="text-sm">
-                    Selected: <span className="font-medium text-white">{selectedFile.name}</span>
+                  <h3 className={`text-2xl font-light text-white mb-3 transition-all duration-300 ${isDragging ? 'text-indigo-300' : 'group-hover:text-indigo-200'
+                    }`}>
+                    {isDragging
+                      ? 'Drop your model here'
+                      : 'Drag & drop your model file'}
+                  </h3>
+                  <p className="text-gray-400 text-sm mb-8 transition-all duration-300 group-hover:text-gray-300">
+                    Supports PyTorch, TensorFlow, ONNX, scikit-learn
                   </p>
+
+                  <div className="flex items-center justify-center space-x-4">
+                    <label htmlFor="file-upload" className="cursor-pointer group">
+                      <span className={`inline-block bg-white text-black px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 group-hover:bg-gray-100 group-hover:scale-105 ${isDragging ? 'bg-indigo-100 text-indigo-800 scale-105' : ''
+                        }`}>
+                        Choose File
+                      </span>
+                      <input
+                        id="file-upload"
+                        type="file"
+                        className="hidden"
+                        onChange={handleFileSelect}
+                        // accept=".pt,.pth,.h5,.pb,.onnx,.pkl"
+                      />
+                    </label>
+                    <button className={`glass-card px-6 py-2.5 rounded-lg text-sm font-light text-gray-300 transition-all duration-300 group-hover:bg-white/5 group-hover:text-white group-hover:scale-105 ${isDragging ? 'bg-indigo-800/30 text-indigo-200 scale-105' : ''
+                      }`}>
+                      Connect Git Repo
+                    </button>
+                  </div>
+
+                  {selectedFile && (
+                    <div className={`mt-6 inline-block px-4 py-2 rounded-lg border transition-all duration-300 ${isDragging
+                      ? 'bg-indigo-800/30 border-indigo-500 text-indigo-200'
+                      : 'bg-gray-800 border-gray-700 text-gray-300 group-hover:bg-gray-700/50 group-hover:border-gray-600'
+                      }`}>
+                      <p className="text-sm">
+                        Selected: <span className="font-medium text-white">{selectedFile.name}</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Deployed Models */}
+              {models.length > 0 && (
+                <div className="glass-card rounded-2xl p-8 border border-gray-800/50 backdrop-blur-sm">
+                  <h2 className="text-2xl font-light text-white mb-6">Your Models</h2>
+
+                  <div className="space-y-4">
+                    {models.map((model) => (
+                      <div
+                        key={model.id}
+                        className="glass-strong rounded-xl p-6 hover:bg-white/5 transition-all duration-300 border border-gray-700/30 hover:border-gray-600/50"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="text-lg font-semibold text-white">
+                                {model.name}
+                              </h3>
+                              <span
+                                className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                                  model.status
+                                )}`}
+                              >
+                                {getStatusIcon(model.status)}
+                                <span className="capitalize">{model.status}</span>
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-6 text-sm text-gray-400">
+                              <span className="flex items-center space-x-1">
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                  />
+                                </svg>
+                                <span>{model.size}</span>
+                              </span>
+                              <span className="flex items-center space-x-1">
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                                <span>{model.uploadTime}</span>
+                              </span>
+                              <span className="uppercase text-xs font-mono bg-gray-700 px-2 py-0.5 rounded text-gray-300">
+                                {model.type}
+                              </span>
+                            </div>
+                            {model.endpoint && model.status === 'deployed' && (
+                              <div className="mt-3 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+                                <p className="text-xs text-gray-500 mb-1">API Endpoint</p>
+                                <code className="text-sm text-indigo-400 font-mono">
+                                  {model.endpoint}
+                                </code>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center space-x-2 ml-6">
+                            {model.status === 'deployed' && (
+                              <>
+                                <button className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700">
+                                  <svg
+                                    className="w-5 h-5 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                                    />
+                                  </svg>
+                                </button>
+                                <button className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700">
+                                  <svg
+                                    className="w-5 h-5 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                  </svg>
+                                </button>
+                              </>
+                            )}
+                            <button className="p-2 bg-gray-800 rounded-lg hover:bg-red-900/20 hover:border-red-500/50 transition-colors border border-gray-700 group">
+                              <svg
+                                className="w-5 h-5 text-gray-400 group-hover:text-red-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
 
-          {/* Deployed Models */}
-          {models.length > 0 && (
-            <div className="glass-card rounded-2xl p-8 border border-gray-800/50 backdrop-blur-sm">
-              <h2 className="text-2xl font-light text-white mb-6">Your Models</h2>
-
-              <div className="space-y-4">
-                {models.map((model) => (
-                  <div
-                    key={model.id}
-                    className="glass-strong rounded-xl p-6 hover:bg-white/5 transition-all duration-300 border border-gray-700/30 hover:border-gray-600/50"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h3 className="text-lg font-semibold text-white">
-                            {model.name}
-                          </h3>
-                          <span
-                            className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                              model.status
-                            )}`}
-                          >
-                            {getStatusIcon(model.status)}
-                            <span className="capitalize">{model.status}</span>
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-6 text-sm text-gray-400">
-                          <span className="flex items-center space-x-1">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                              />
-                            </svg>
-                            <span>{model.size}</span>
-                          </span>
-                          <span className="flex items-center space-x-1">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            <span>{model.uploadTime}</span>
-                          </span>
-                          <span className="uppercase text-xs font-mono bg-gray-700 px-2 py-0.5 rounded text-gray-300">
-                            {model.type}
-                          </span>
-                        </div>
-                        {model.endpoint && model.status === 'deployed' && (
-                          <div className="mt-3 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-                            <p className="text-xs text-gray-500 mb-1">API Endpoint</p>
-                            <code className="text-sm text-indigo-400 font-mono">
-                              {model.endpoint}
-                            </code>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center space-x-2 ml-6">
-                        {model.status === 'deployed' && (
-                          <>
-                            <button className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700">
-                              <svg
-                                className="w-5 h-5 text-gray-400"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                                />
-                              </svg>
-                            </button>
-                            <button className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700">
-                              <svg
-                                className="w-5 h-5 text-gray-400"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                                />
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                />
-                              </svg>
-                            </button>
-                          </>
-                        )}
-                        <button className="p-2 bg-gray-800 rounded-lg hover:bg-red-900/20 hover:border-red-500/50 transition-colors border border-gray-700 group">
-                          <svg
-                            className="w-5 h-5 text-gray-400 group-hover:text-red-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </div>
+              {/* Quick Stats */}
+              <div className="grid md:grid-cols-3 gap-6 mt-12">
+                <div className="glass-card rounded-xl p-6 border border-gray-800/50 backdrop-blur-sm hover:bg-white/5 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1 font-light">Total Deployments</p>
+                      <p className="text-3xl font-light text-white">
+                        {models.filter((m) => m.status === 'deployed').length}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center border border-green-500/20 backdrop-blur-sm">
+                      <svg
+                        className="w-6 h-6 text-green-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+                </div>
 
-          {/* Quick Stats */}
-          <div className="grid md:grid-cols-3 gap-6 mt-12">
-            <div className="glass-card rounded-xl p-6 border border-gray-800/50 backdrop-blur-sm hover:bg-white/5 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-400 mb-1 font-light">Total Deployments</p>
-                  <p className="text-3xl font-light text-white">
-                    {models.filter((m) => m.status === 'deployed').length}
-                  </p>
+                <div className="glass-card rounded-xl p-6 border border-gray-800/50 backdrop-blur-sm hover:bg-white/5 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1 font-light">Processing</p>
+                      <p className="text-3xl font-light text-white">
+                        {models.filter(
+                          (m) => m.status === 'uploading' || m.status === 'processing'
+                        ).length}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center border border-yellow-500/20 backdrop-blur-sm">
+                      <svg
+                        className="w-6 h-6 text-yellow-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center border border-green-500/20 backdrop-blur-sm">
-                  <svg
-                    className="w-6 h-6 text-green-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
 
-            <div className="glass-card rounded-xl p-6 border border-gray-800/50 backdrop-blur-sm hover:bg-white/5 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-400 mb-1 font-light">Processing</p>
-                  <p className="text-3xl font-light text-white">
-                    {models.filter(
-                      (m) => m.status === 'uploading' || m.status === 'processing'
-                    ).length}
-                  </p>
+                <div className="glass-card rounded-xl p-6 border border-gray-800/50 backdrop-blur-sm hover:bg-white/5 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-400 mb-1 font-light">Total Models</p>
+                      <p className="text-3xl font-light text-white">{models.length}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-500/20 backdrop-blur-sm">
+                      <svg
+                        className="w-6 h-6 text-indigo-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                        />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center border border-yellow-500/20 backdrop-blur-sm">
-                  <svg
-                    className="w-6 h-6 text-yellow-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="glass-card rounded-xl p-6 border border-gray-800/50 backdrop-blur-sm hover:bg-white/5 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-400 mb-1 font-light">Total Models</p>
-                  <p className="text-3xl font-light text-white">{models.length}</p>
-                </div>
-                <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-500/20 backdrop-blur-sm">
-                  <svg
-                    className="w-6 h-6 text-indigo-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
               </div>
             </div>
           )}

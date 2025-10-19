@@ -45,19 +45,12 @@ export default function Home() {
               <span className="text-xl font-medium text-white">Weave</span>
             </div>
 
-            <div className="flex items-center space-x-8">
-              <Link
-                href="/dashboard"
-                className="text-gray-400 hover:text-white transition-colors text-sm"
-              >
-                Dashboard
-              </Link>
-              <Link href="/dashboard">
-                <button className="bg-white text-black px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-200">
-                  Get Started
-                </button>
-              </Link>
-            </div>
+            <Link
+              className="bg-white text-black px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-all duration-200"
+              href="/dashboard"
+            >
+              Dashboard
+            </Link>
           </div>
         </div>
       </nav>
@@ -79,10 +72,11 @@ export default function Home() {
               no DevOps required.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-300">
-              <Link href="/dashboard">
-                <button className="bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300">
-                  Deploy Your Model
-                </button>
+              <Link
+                href="/dashboard"
+                className="bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300"
+              >
+                Deploy Your Model
               </Link>
             </div>
           </div>
@@ -251,10 +245,11 @@ export default function Home() {
             Join thousands of ML engineers who've simplified their deployment
             workflow.
           </p>
-          <Link href="/dashboard">
-            <button className="bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300">
-              Deploy Your Model
-            </button>
+          <Link
+            href="/dashboard"
+            className="bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300"
+          >
+            Deploy Your Model
           </Link>
         </div>
       </section>

@@ -45,7 +45,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-300">
               <Link href="/dashboard">
-                <button className="animate-pulse bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.8)] hover:cursor-pointer">
+                <button className="animate-pulse bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-8 py-3 rounded-lg text-base font-medium hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 transform hover:scale-105 transition-all duration-300 shadow-[0_0_30px_rgba(168,85,247,0.6)] hover:cursor-pointer">
                   Deploy Your Model
                 </button>
               </Link>
@@ -217,7 +217,7 @@ export default function Home() {
             workflow.
           </p>
           <Link href="/dashboard">
-            <button className="animate-pulse bg-white text-black px-8 py-3 rounded-lg text-base font-medium hover:bg-gray-100 transform hover:scale-105 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.8)] hover:cursor-pointer">
+            <button className="animate-pulse bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-8 py-3 rounded-lg text-base font-medium hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 transform hover:scale-105 transition-all duration-300 shadow-[0_0_30px_rgba(168,85,247,0.6)] hover:cursor-pointer">
               Deploy Your Model
             </button>
           </Link>

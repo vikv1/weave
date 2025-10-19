@@ -106,6 +106,8 @@ export default function Dashboard() {
   const [showInferenceModal, setShowInferenceModal] = useState(false);
   const [inferenceInput, setInferenceInput] = useState("");
   const [inferenceOutput, setInferenceOutput] = useState("");
+  const [showUploadSuccessModal, setShowUploadSuccessModal] = useState(false);
+  const [uploadedSuccessFile, setUploadedSuccessFile] = useState<string | null>(null);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -207,9 +209,9 @@ export default function Dashboard() {
 
   const handleFileUpload = async (file: File) => {
     setSelectedFile(file);
-  
+
     console.log("file uploading...");
-  
+
     try {
       const fileContent = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -217,7 +219,7 @@ export default function Dashboard() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-  
+
       const res = await fetch('/api/s3', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -227,20 +229,21 @@ export default function Dashboard() {
           fileType: file.type,
         }),
       });
-  
+
       if (!res.ok) {
         const error = await res.json();
         console.error('Upload failed:', error);
         alert(`Upload failed: ${error.error || 'Unknown error'}`);
         return;
       }
-  
+
       const result = await res.json();
       console.log('Upload successful:', result);
-      
-      // Show success message
-      alert('File uploaded successfully!');
-      
+
+      // Show success modal
+      setUploadedSuccessFile(file.name);
+      setShowUploadSuccessModal(true);
+
       // Refresh the S3 items list
       if (user) {
         setS3Loading(true);
@@ -256,15 +259,24 @@ export default function Dashboard() {
           setS3Loading(false);
         }
       }
-      
+
       // Clear selected file
       setSelectedFile(null);
-      
+
     } catch (error) {
       console.error('Upload error:', error);
       alert('Upload failed. Please try again.');
     }
   };
+
+  // Auto-dismiss upload success modal after a short delay
+  useEffect(() => {
+    if (!showUploadSuccessModal) return;
+    const timer = setTimeout(() => {
+      setShowUploadSuccessModal(false);
+    }, 2800);
+    return () => clearTimeout(timer);
+  }, [showUploadSuccessModal]);
 
   const handleModelClick = (model: UploadedModel) => {
     setSelectedModel(model);
@@ -1331,6 +1343,46 @@ export default function Dashboard() {
   -H "Content-Type: application/json" \\
   -d '{"input": "your input data here"}'`}
               </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Success Modal */}
+      {showUploadSuccessModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+          onClick={() => setShowUploadSuccessModal(false)}
+        >
+          <div
+            className="glass-strong rounded-2xl p-8 max-w-md w-full border border-gray-700/50 shadow-2xl text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-4 w-14 h-14 rounded-2xl bg-green-500/15 border border-green-500/30 flex items-center justify-center">
+              <svg className="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-light text-white">Upload complete</h3>
+            <p className="text-sm text-gray-400 mt-2">
+              {uploadedSuccessFile ? <span className="text-gray-200">{uploadedSuccessFile}</span> : 'Your file'} has been uploaded successfully.
+            </p>
+            <div className="mt-6 flex items-center justify-center space-x-3">
+              <button
+                onClick={() => setShowUploadSuccessModal(false)}
+                className="px-5 py-2.5 rounded-lg font-medium border border-gray-700/60 text-gray-300 hover:bg-white/5 transition-all"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setShowUploadSuccessModal(false);
+                  setActiveTab('home');
+                }}
+                className="px-5 py-2.5 rounded-lg font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-all"
+              >
+                View in Dashboard
+              </button>
             </div>
           </div>
         </div>
